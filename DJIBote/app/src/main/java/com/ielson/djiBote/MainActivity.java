@@ -9,6 +9,9 @@ import android.content.Intent;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
+import android.view.View;
+import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import dji.common.error.DJIError;
@@ -23,6 +26,11 @@ public class MainActivity extends AppCompatActivity {
     public static final String FLAG_CONNECTION_CHANGE = "dji_sdk_connection_change";
     private static BaseProduct mProduct;
     private Handler mHandler;
+
+    ProgressBar registerProgressBar;
+    TextView registerTextView;
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -43,6 +51,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         setContentView(R.layout.activity_main);
+        registerProgressBar = (ProgressBar) findViewById(R.id.registerProgressBar);
+        registerTextView = (TextView) findViewById(R.id.registerTextView);
 
         //Initialize DJI SDK Manager
         mHandler = new Handler(Looper.getMainLooper());
@@ -52,7 +62,7 @@ public class MainActivity extends AppCompatActivity {
     private DJISDKManager.SDKManagerCallback mDJISDKManagerCallback = new DJISDKManager.SDKManagerCallback() {
 
         @Override
-        public void onRegister(DJIError error) {
+        public void onRegister(final DJIError error) {
             Log.d(TAG, error == null ? "success" : error.getDescription());
             if(error == DJISDKError.REGISTRATION_SUCCESS) {
                 DJISDKManager.getInstance().startConnectionToProduct();
@@ -62,6 +72,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(getApplicationContext(), "Register Success", Toast.LENGTH_LONG).show();
+                        registerProgressBar.setVisibility(View.GONE);
+                        registerTextView.setText("Registered");
+
                     }
                 });
             } else {
@@ -71,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         Toast.makeText(getApplicationContext(), "register sdk failed, check if network is available", Toast.LENGTH_LONG).show();
+                        registerTextView.setText("Could not register, error found: " + error.toString());
                     }
                 });
 

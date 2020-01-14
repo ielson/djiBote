@@ -7,8 +7,8 @@
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>
-            <option value="/media/storage/Documents/Code/DjiBote/DJIBote/DJIBote" />
-            <option value="/media/storage/Documents/Code/DjiBote/DJIBote/DJIBote/app" />
+            <option value="/media/storage/Documents/Code/tcc/DJIBote/DJIBote" />
+            <option value="/media/storage/Documents/Code/tcc/DJIBote/DJIBote/app" />
           </set>
         </option>
         <option name="resolveModulePerSourceSet" value="false" />
