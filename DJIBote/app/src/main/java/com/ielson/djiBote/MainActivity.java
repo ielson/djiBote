@@ -10,15 +10,22 @@ import android.os.Handler;
 import android.os.Looper;
 import android.util.Log;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.w3c.dom.Text;
 
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
 import dji.sdk.base.BaseComponent;
 import dji.sdk.base.BaseProduct;
 import dji.sdk.sdkmanager.DJISDKManager;
+
+
+// Done following this version of dji tutorials
+// https://web.archive.org/web/20171025211037/https://developer.dji.com/mobile-sdk/documentation/application-development-workflow/workflow-integrate.html
 
 public class MainActivity extends AppCompatActivity {
 
@@ -29,7 +36,13 @@ public class MainActivity extends AppCompatActivity {
 
     ProgressBar registerProgressBar;
     TextView registerTextView;
+    Button connectButton;
+    TextView modelTextView;
 
+    public void connectDrone(View view){
+
+
+    }
 
 
     @Override
@@ -73,7 +86,8 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         Toast.makeText(getApplicationContext(), "Register Success", Toast.LENGTH_LONG).show();
                         registerProgressBar.setVisibility(View.GONE);
-                        registerTextView.setText("Registered");
+                        registerTextView.setText("Successful registration");
+
 
                     }
                 });
@@ -94,6 +108,16 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onProductChange(BaseProduct oldProduct, BaseProduct newProduct) {
+            Toast.makeText(getApplicationContext(), "ProductChange", Toast.LENGTH_SHORT).show();
+
+            modelTextView = (TextView) findViewById(R.id.modelTextView);
+            mProduct = DJISDKManager.getInstance().getProduct();
+            if (mProduct != null && mProduct.getModel() != null) {
+                modelTextView.setText(mProduct.getModel().getDisplayName() + " is connected");
+            } else {
+                modelTextView.setText("No model connected");
+            }
+
 
             mProduct = newProduct;
             if(mProduct != null) {
@@ -110,12 +134,14 @@ public class MainActivity extends AppCompatActivity {
         public void onComponentChange(BaseProduct.ComponentKey key, BaseComponent oldComponent, BaseComponent newComponent) {
             if(newComponent != null) {
                 newComponent.setComponentListener(mDJIComponentListener);
+                Toast.makeText(getApplicationContext(), "Component Changed", Toast.LENGTH_LONG).show();
             }
             notifyStatusChange();
         }
 
         @Override
         public void onConnectivityChange(boolean isConnected) {
+            Toast.makeText(getApplicationContext(), "Connectivity Changed", Toast.LENGTH_SHORT).show();
             notifyStatusChange();
         }
 
