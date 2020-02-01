@@ -37,7 +37,7 @@
         <activity
             android:name=".MainActivity"
             android:label="@string/title_activity_main"
-            android:theme="@style/AppTheme.NoActionBar"></activity>
+            android:screenOrientation="landscape"></activity>
         <!-- DJI SDK -->
         <uses-library android:name="com.android.future.usb.accessory" />
 

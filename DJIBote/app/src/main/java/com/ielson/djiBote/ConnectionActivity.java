@@ -29,7 +29,7 @@ public class ConnectionActivity extends AppCompatActivity {
 
     private static final String TAG = ConnectionActivity.class.getName();
     public static final String FLAG_CONNECTION_CHANGE = "dji_sdk_connection_change";
-    private static BaseProduct mProduct;
+    public static BaseProduct mProduct;
     private Handler mHandler;
     boolean connectionResult;
 
