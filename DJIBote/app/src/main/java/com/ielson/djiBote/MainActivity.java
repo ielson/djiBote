@@ -21,12 +21,14 @@ import android.widget.ToggleButton;
 
 import dji.common.flightcontroller.FlightControllerState;
 import dji.common.product.Model;
+import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseProduct;
 import dji.sdk.camera.Camera;
 import dji.sdk.camera.VideoFeeder;
 import dji.sdk.codec.DJICodecManager;
 import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.products.Aircraft;
+import dji.common.error.DJIError;
 
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
@@ -116,6 +118,7 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         Log.e(TAG, "onResume");
         super.onResume();
         initPreviewer();
+        initFlightController();
         onProductChange();
         if(mVideoSurface == null) {
             Log.e(TAG, "mVideoSurface is null");
@@ -181,8 +184,39 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_take_off:
+                Toast.makeText(this, "Take off pressed", Toast.LENGTH_SHORT).show();
+                if (mFlightController != null){
+                    Toast.makeText(this, "Flight controller not null", Toast.LENGTH_SHORT).show();
+                    mFlightController.startTakeoff(
+                            new CommonCallbacks.CompletionCallback() {
+                                @Override
+                                public void onResult(DJIError djiError) {
+                                    if (djiError != null) {
+                                        Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(MainActivity.this, "Takeoff success", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            }
+                    );
+                }
                 break;
             case R.id.btn_land:
+                Toast.makeText(this, "Land pressed", Toast.LENGTH_SHORT).show();
+                if (mFlightController != null){
+                    mFlightController.startLanding(
+                            new CommonCallbacks.CompletionCallback() {
+                                @Override
+                                public void onResult(DJIError djiError) {
+                                    if (djiError != null) {
+                                        Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                                    } else {
+                                        Toast.makeText(MainActivity.this, "Start Landing", Toast.LENGTH_SHORT).show();
+                                    }
+                                }
+                            }
+                    );
+                }
                 break;
             default:
                 break;
