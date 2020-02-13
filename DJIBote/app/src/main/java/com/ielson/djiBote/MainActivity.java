@@ -1,6 +1,9 @@
 package com.ielson.djiBote;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -16,22 +19,23 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import dji.common.flightcontroller.FlightControllerState;
 import dji.common.product.Model;
 import dji.sdk.base.BaseProduct;
 import dji.sdk.camera.Camera;
 import dji.sdk.camera.VideoFeeder;
 import dji.sdk.codec.DJICodecManager;
+import dji.sdk.flightcontroller.FlightController;
+import dji.sdk.products.Aircraft;
 
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
     protected TextureView mVideoSurface = null;
-    private Button mCaptureBtn, mShootPhotoModeBtn, mRecordVideoModeBtn;
-    private ToggleButton mRecordBtn;
-    private TextView recordingTime;
+    private Button mLandBtn, mTakeOffBtn;
     private static final String TAG = MainActivity.class.getName();
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
     private static BaseProduct product;
-    
+    private FlightController mFlightController;
 
     protected DJICodecManager mCodecManager = null;
 
@@ -49,6 +53,37 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                 }
             }
         };
+    }
+
+    protected BroadcastReceiver mReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            onProductConnectionChange();
+        }
+    };
+
+    private void onProductConnectionChange()
+    {
+        initFlightController();
+    }
+    private void initFlightController() {
+        if (product != null && product.isConnected()) {
+            if (product instanceof Aircraft) {
+                mFlightController = ((Aircraft) product).getFlightController();
+            }
+        }
+        /*
+        if (mFlightController != null) {
+            mFlightController.setStateCallback(new FlightControllerState.Callback() {
+                @Override
+                public void onUpdate(FlightControllerState djiFlightControllerCurrentState) {
+                    djiFlightControllerCurrentState.setM
+                    droneLocationLat = djiFlightControllerCurrentState.getAircraftLocation().getLatitude();
+                    droneLocationLng = djiFlightControllerCurrentState.getAircraftLocation().getLongitude();
+                    updateDroneLocation();
+                }
+            });
+        }*/
     }
 
     protected void onProductChange() {
@@ -130,41 +165,25 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     private void initUI() {
         // init mVideoSurface
         mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
-        recordingTime = (TextView) findViewById(R.id.timer);
-        mCaptureBtn = (Button) findViewById(R.id.btn_capture);
-        mRecordBtn = (ToggleButton) findViewById(R.id.btn_record);
-        mShootPhotoModeBtn = (Button) findViewById(R.id.btn_shoot_photo_mode);
-        mRecordVideoModeBtn = (Button) findViewById(R.id.btn_record_video_mode);
+        mTakeOffBtn = (Button) findViewById(R.id.btn_take_off);
+        mLandBtn = (Button) findViewById(R.id.btn_land);
+
 
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);
         }
 
-        mCaptureBtn.setOnClickListener(this);
-        mRecordBtn.setOnClickListener(this);
-        mShootPhotoModeBtn.setOnClickListener(this);
-        mRecordVideoModeBtn.setOnClickListener(this);
-        recordingTime.setVisibility(View.INVISIBLE);
-        mRecordBtn.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-
-            }
-        });
+        mTakeOffBtn.setOnClickListener(this);
+        mLandBtn.setOnClickListener(this);
     }
 
     @Override
     public void onClick(View v) {
         switch (v.getId()) {
-            case R.id.btn_capture:{
+            case R.id.btn_take_off:
                 break;
-            }
-            case R.id.btn_shoot_photo_mode:{
+            case R.id.btn_land:
                 break;
-            }
-            case R.id.btn_record_video_mode:{
-                break;
-            }
             default:
                 break;
         }
