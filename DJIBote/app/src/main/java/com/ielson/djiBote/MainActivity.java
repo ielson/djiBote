@@ -19,7 +19,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import java.util.Timer;
+import java.util.TimerTask;
+
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.product.Model;
 import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseProduct;
@@ -30,6 +34,9 @@ import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.products.Aircraft;
 import dji.common.error.DJIError;
 
+import org.ros.EnvironmentVariables;
+
+
 public class MainActivity extends Activity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
     protected TextureView mVideoSurface = null;
@@ -38,6 +45,15 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
     private static BaseProduct product;
     private FlightController mFlightController;
+    private OnScreenJoystick mScreenJoystickRight;
+    private OnScreenJoystick mScreenJoystickLeft;
+
+    private Timer mSendVirtualStickDataTimer;
+    private SendVirtualStickDataTask mSendVirtualStickDataTask;
+    private float mPitch;
+    private float mRoll;
+    private float mYaw;
+    private float mThrottle;
 
     protected DJICodecManager mCodecManager = null;
 
@@ -125,6 +141,23 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         }
     }
 
+    class SendVirtualStickDataTask extends TimerTask {
+        @Override
+        public void run() {
+            if (mFlightController != null) {
+                mFlightController.sendVirtualStickFlightControlData(
+                        new FlightControlData(
+                                mPitch, mRoll, mYaw, mThrottle
+                        ), new CommonCallbacks.CompletionCallback() {
+                            @Override
+                            public void onResult(DJIError djiError) {
+                            }
+                        }
+                );
+            }
+        }
+    }
+
     @Override
     public void onPause() {
         super.onPause();
@@ -170,6 +203,8 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
         mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
         mTakeOffBtn = (Button) findViewById(R.id.btn_take_off);
         mLandBtn = (Button) findViewById(R.id.btn_land);
+        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
+        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
 
 
         if (null != mVideoSurface) {
@@ -178,6 +213,46 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
         mTakeOffBtn.setOnClickListener(this);
         mLandBtn.setOnClickListener(this);
+        mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
+            @Override
+            public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
+                if(Math.abs(pX) < 0.02 ){
+                    pX = 0;
+                }
+                if(Math.abs(pY) < 0.02 ){
+                    pY = 0;
+                }
+                float pitchJoyControlMaxSpeed = 10;
+                float rollJoyControlMaxSpeed = 10;
+                mPitch = (float)(pitchJoyControlMaxSpeed * pX);
+                mRoll = (float)(rollJoyControlMaxSpeed * pY);
+                if (null == mSendVirtualStickDataTimer) {
+                    mSendVirtualStickDataTask = new SendVirtualStickDataTask();
+                    mSendVirtualStickDataTimer = new Timer();
+                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
+                }
+            }
+        });
+        mScreenJoystickRight.setJoystickListener(new OnScreenJoystickListener() {
+            @Override
+            public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
+                if(Math.abs(pX) < 0.02 ){
+                    pX = 0;
+                }
+                if(Math.abs(pY) < 0.02 ){
+                    pY = 0;
+                }
+                float verticalJoyControlMaxSpeed = 2;
+                float yawJoyControlMaxSpeed = 30;
+                mYaw = (float)(yawJoyControlMaxSpeed * pX);
+                mThrottle = (float)(verticalJoyControlMaxSpeed * pY);
+                if (null == mSendVirtualStickDataTimer) {
+                    mSendVirtualStickDataTask = new SendVirtualStickDataTask();
+                    mSendVirtualStickDataTimer = new Timer();
+                    mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 0, 200);
+                }
+            }
+        });
     }
 
     @Override
