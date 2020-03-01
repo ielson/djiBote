@@ -35,9 +35,14 @@ import dji.sdk.products.Aircraft;
 import dji.common.error.DJIError;
 
 import org.ros.EnvironmentVariables;
+import org.ros.android.MessageCallable;
+import org.ros.android.RosActivity;
+import org.ros.android.view.RosTextView;
+import org.ros.node.NodeConfiguration;
+import org.ros.node.NodeMainExecutor;
 
 
-public class MainActivity extends Activity implements TextureView.SurfaceTextureListener, View.OnClickListener {
+public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
     protected TextureView mVideoSurface = null;
     private Button mLandBtn, mTakeOffBtn;
@@ -57,6 +62,14 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
 
     protected DJICodecManager mCodecManager = null;
 
+    public MainActivity() {
+        // The RosActivity constructor configures the notification title and ticker
+        // messages.
+        super("DJIBote", "Communication DJI-ROS");
+        // If you know the IP/Port of the ROS Master, you can set it as follows and avoid having the Master Chooser activity:
+        //super("DJI-Ros Driver Activity", "DJI-Ros Driver Activity", URI.create("http://10.42.0.1:11311")
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -71,6 +84,28 @@ public class MainActivity extends Activity implements TextureView.SurfaceTexture
                 }
             }
         };
+    }
+
+    @Override
+    protected void init(NodeMainExecutor nodeMainExecutor) {
+        // At this point, the user has already been prompted to either enter the URI
+        // of a master to use or to start a master locally.
+        NodeConfiguration nodeConfiguration = NodeConfiguration.newPublic(getRosHostname());
+        nodeConfiguration.setMasterUri(getMasterUri());
+        Log.d("Master URI ", getMasterUri().toString());
+        Log.d("ROS HOSTNAME", EnvironmentVariables.ROS_HOSTNAME);
+        Log.d("ROS IP", EnvironmentVariables.ROS_IP);
+        Log.d("ROS MASTER URI", EnvironmentVariables.ROS_MASTER_URI);
+        Log.d("ROS HOSTNAME", EnvironmentVariables.ROS_ROOT);
+        //Log.d("Node name", nodeConfiguration.getNodeName().toString());
+
+
+
+        //talker = new Talker();
+
+
+        //nodeMainExecutor.execute(talker, nodeConfiguration);
+        //nodeMainExecutor.execute(rosTextView, nodeConfiguration);
     }
 
     protected BroadcastReceiver mReceiver = new BroadcastReceiver() {
