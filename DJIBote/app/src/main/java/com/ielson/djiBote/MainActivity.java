@@ -69,6 +69,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     private Talker talker;
 
+    public static String positionZ;
+
     public MainActivity() {
         // The RosActivity constructor configures the notification title and ticker
         // messages.
@@ -141,7 +143,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                                 String roll = String.format("%.2f", flightControllerState.getAttitude().roll);
                                 String positionX = String.format("%.2f", flightControllerState.getAircraftLocation().getLatitude());
                                 String positionY = String.format("%.2f", flightControllerState.getAircraftLocation().getLongitude());
-                                String positionZ = String.format("%.2f", flightControllerState.getAircraftLocation().getAltitude());
+                                positionZ = String.format("%.2f", flightControllerState.getAircraftLocation().getAltitude());
 
                                 mTextView.setText("Yaw : " + yaw + ", Pitch : " + pitch + ", Roll : " + roll + "\n" + ", PosX : " + positionX +
                                         ", PosY : " + positionY +

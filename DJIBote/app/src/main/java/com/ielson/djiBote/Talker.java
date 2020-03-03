@@ -53,11 +53,7 @@ import org.ros.node.ConnectedNode;
 import org.ros.node.NodeMain;
 import org.ros.node.topic.Publisher;
 
-/**
- * A simple {@link Publisher} {@link NodeMain}.
- *
- * @author damonkohler@google.com (Damon Kohler)
- */
+
 public class Talker extends AbstractNodeMain {
     private String topic_name;
 
@@ -93,7 +89,7 @@ public class Talker extends AbstractNodeMain {
             protected void loop() throws InterruptedException {
                 Log.d("Loop","ok");
                 std_msgs.String str = publisher.newMessage();
-                str.setData("Hello Binu " + sequenceNumber);
+                str.setData("Hello Binu " + MainActivity.positionZ);
                 publisher.publish(str);
                 sequenceNumber++;
                 Thread.sleep(1000);
