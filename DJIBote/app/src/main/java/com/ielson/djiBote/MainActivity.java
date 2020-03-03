@@ -6,6 +6,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.SurfaceTexture;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -53,6 +56,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private OnScreenJoystick mScreenJoystickRight;
     private OnScreenJoystick mScreenJoystickLeft;
 
+    private TextView mTextView;
+
     private Timer mSendVirtualStickDataTimer;
     private SendVirtualStickDataTask mSendVirtualStickDataTask;
     private float mPitch;
@@ -61,6 +66,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private float mThrottle;
 
     protected DJICodecManager mCodecManager = null;
+
+    private Talker talker;
 
     public MainActivity() {
         // The RosActivity constructor configures the notification title and ticker
@@ -101,10 +108,10 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
 
 
-        //talker = new Talker();
+        talker = new Talker();
 
 
-        //nodeMainExecutor.execute(talker, nodeConfiguration);
+        nodeMainExecutor.execute(talker, nodeConfiguration);
         //nodeMainExecutor.execute(rosTextView, nodeConfiguration);
     }
 
@@ -123,20 +130,29 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         if (product != null && product.isConnected()) {
             if (product instanceof Aircraft) {
                 mFlightController = ((Aircraft) product).getFlightController();
+                mFlightController.setStateCallback(new FlightControllerState.Callback() {
+                    @Override
+                    public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
+                        new Handler(Looper.getMainLooper()).post(new Runnable() {
+                            @Override
+                            public void run() {
+                                String yaw = String.format("%.2f", flightControllerState.getAttitude().yaw);
+                                String pitch = String.format("%.2f", flightControllerState.getAttitude().pitch);
+                                String roll = String.format("%.2f", flightControllerState.getAttitude().roll);
+                                String positionX = String.format("%.2f", flightControllerState.getAircraftLocation().getLatitude());
+                                String positionY = String.format("%.2f", flightControllerState.getAircraftLocation().getLongitude());
+                                String positionZ = String.format("%.2f", flightControllerState.getAircraftLocation().getAltitude());
+
+                                mTextView.setText("Yaw : " + yaw + ", Pitch : " + pitch + ", Roll : " + roll + "\n" + ", PosX : " + positionX +
+                                        ", PosY : " + positionY +
+                                        ", PosZ : " + positionZ);
+                            }
+                        });
+                    }
+                });
             }
         }
-        /*
-        if (mFlightController != null) {
-            mFlightController.setStateCallback(new FlightControllerState.Callback() {
-                @Override
-                public void onUpdate(FlightControllerState djiFlightControllerCurrentState) {
-                    djiFlightControllerCurrentState.setM
-                    droneLocationLat = djiFlightControllerCurrentState.getAircraftLocation().getLatitude();
-                    droneLocationLng = djiFlightControllerCurrentState.getAircraftLocation().getLongitude();
-                    updateDroneLocation();
-                }
-            });
-        }*/
+
     }
 
     protected void onProductChange() {
@@ -240,6 +256,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         mLandBtn = (Button) findViewById(R.id.btn_land);
         mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
         mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
+        mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
 
 
         if (null != mVideoSurface) {
