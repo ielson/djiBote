@@ -36,6 +36,9 @@ dependencies {
     // rosjava imports
     implementation 'org.ros.android_core:android_core_components:0.4.0'
     compile 'org.ros.rosjava_messages:std_msgs:0.5.11'
+    compile 'org.ros.rosjava_messages:geometry_msgs:1.12.7'
+    compile 'org.ros.rosjava_messages:tf2_msgs:0.5.20'
+    compile 'org.ros.rosjava_messages:sensor_msgs:1.12.7'
 
 
 }

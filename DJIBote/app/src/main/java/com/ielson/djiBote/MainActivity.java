@@ -36,13 +36,19 @@ import dji.sdk.codec.DJICodecManager;
 import dji.sdk.flightcontroller.FlightController;
 import dji.sdk.products.Aircraft;
 import dji.common.error.DJIError;
+import geometry_msgs.Point;
+
 
 import org.ros.EnvironmentVariables;
 import org.ros.android.MessageCallable;
 import org.ros.android.RosActivity;
 import org.ros.android.view.RosTextView;
+import org.ros.internal.node.server.master.MasterRegistrationListener;
+import org.ros.master.client.MasterStateClient;
+import org.ros.master.client.SystemState;
 import org.ros.node.NodeConfiguration;
 import org.ros.node.NodeMainExecutor;
+
 
 
 public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener {
@@ -52,11 +58,11 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private static final String TAG = MainActivity.class.getName();
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
     private static BaseProduct product;
-    private FlightController mFlightController;
+    public static FlightController mFlightController;
     private OnScreenJoystick mScreenJoystickRight;
     private OnScreenJoystick mScreenJoystickLeft;
 
-    private TextView mTextView;
+    public static TextView mTextView;
 
     private Timer mSendVirtualStickDataTimer;
     private SendVirtualStickDataTask mSendVirtualStickDataTask;
@@ -69,7 +75,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     private Talker talker;
 
-    public static String positionZ;
+
 
     public MainActivity() {
         // The RosActivity constructor configures the notification title and ticker
@@ -110,7 +116,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
 
 
-        talker = new Talker();
 
 
         nodeMainExecutor.execute(talker, nodeConfiguration);
@@ -129,29 +134,13 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         initFlightController();
     }
     private void initFlightController() {
+
+
+        talker = new Talker("position");
         if (product != null && product.isConnected()) {
             if (product instanceof Aircraft) {
                 mFlightController = ((Aircraft) product).getFlightController();
-                mFlightController.setStateCallback(new FlightControllerState.Callback() {
-                    @Override
-                    public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
-                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                            @Override
-                            public void run() {
-                                String yaw = String.format("%.2f", flightControllerState.getAttitude().yaw);
-                                String pitch = String.format("%.2f", flightControllerState.getAttitude().pitch);
-                                String roll = String.format("%.2f", flightControllerState.getAttitude().roll);
-                                String positionX = String.format("%.2f", flightControllerState.getAircraftLocation().getLatitude());
-                                String positionY = String.format("%.2f", flightControllerState.getAircraftLocation().getLongitude());
-                                positionZ = String.format("%.2f", flightControllerState.getAircraftLocation().getAltitude());
 
-                                mTextView.setText("Yaw : " + yaw + ", Pitch : " + pitch + ", Roll : " + roll + "\n" + ", PosX : " + positionX +
-                                        ", PosY : " + positionY +
-                                        ", PosZ : " + positionZ);
-                            }
-                        });
-                    }
-                });
             }
         }
 
@@ -179,6 +168,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         if (camera != null){
             // Reset the callback
             VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(null);
+
         }
     }
 
@@ -193,6 +183,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             Log.e(TAG, "mVideoSurface is null");
         }
     }
+
 
     class SendVirtualStickDataTask extends TimerTask {
         @Override
