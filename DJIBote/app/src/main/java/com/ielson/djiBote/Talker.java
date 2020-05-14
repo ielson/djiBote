@@ -85,12 +85,12 @@ public class Talker extends AbstractNodeMain {
         final Image videoFeedMsg = videoPublisher.newMessage();
         Header header = videoFeedMsg.getHeader();
         header.setStamp(connectedNode.getCurrentTime());
-        videoFeedMsg.setHeight();
-        videoFeedMsg.setWidth();
-        videoFeedMsg.setEncoding();
-        videoFeedMsg.setIsBigendian();
-        videoFeedMsg.setStep();
-        videoFeedMsg.setData();
+//        videoFeedMsg.setHeight();
+//        videoFeedMsg.setWidth();
+//        videoFeedMsg.setEncoding();
+//        videoFeedMsg.setIsBigendian();
+//        videoFeedMsg.setStep();
+//        videoFeedMsg.setData();
         
         MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
             @Override
