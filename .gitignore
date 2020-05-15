@@ -63,3 +63,5 @@ captures/
 # Keystore files
 *.jks
 
+# some annotations about original project
+notes/
