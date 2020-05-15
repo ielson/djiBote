@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.graphics.YuvImage;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
@@ -22,6 +26,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
+import com.ielson.djiBote.media.DJIVideoStreamDecoder;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -51,7 +62,7 @@ import org.ros.node.NodeMainExecutor;
 
 
 
-public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener {
+public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener, DJIVideoStreamDecoder.IYuvDataListener {
 
     protected TextureView mVideoSurface = null;
     private Button mLandBtn, mTakeOffBtn;
@@ -240,6 +251,59 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
     }
+
+
+
+
+    @Override
+    public void onYuvDataReceived(byte[] yuvFrame, int width, int height) {
+        Log.e(TAG, "YUV");
+        //In this demo, we test the YUV data by saving it into JPG files.
+        if (DJIVideoStreamDecoder.getInstance().frameIndex % 30 == 0) {
+            byte[] y = new byte[width * height];
+            byte[] u = new byte[width * height / 4];
+            byte[] v = new byte[width * height / 4];
+            byte[] nu = new byte[width * height / 4]; //
+            byte[] nv = new byte[width * height / 4];
+            System.arraycopy(yuvFrame, 0, y, 0, y.length);
+            for (int i = 0; i < u.length; i++) {
+                v[i] = yuvFrame[y.length + 2 * i];
+                u[i] = yuvFrame[y.length + 2 * i + 1];
+            }
+            int uvWidth = width / 2;
+            int uvHeight = height / 2;
+            for (int j = 0; j < uvWidth / 2; j++) {
+                for (int i = 0; i < uvHeight / 2; i++) {
+                    byte uSample1 = u[i * uvWidth + j];
+                    byte uSample2 = u[i * uvWidth + j + uvWidth / 2];
+                    byte vSample1 = v[(i + uvHeight / 2) * uvWidth + j];
+                    byte vSample2 = v[(i + uvHeight / 2) * uvWidth + j + uvWidth / 2];
+                    nu[2 * (i * uvWidth + j)] = uSample1;
+                    nu[2 * (i * uvWidth + j) + 1] = uSample1;
+                    nu[2 * (i * uvWidth + j) + uvWidth] = uSample2;
+                    nu[2 * (i * uvWidth + j) + 1 + uvWidth] = uSample2;
+                    nv[2 * (i * uvWidth + j)] = vSample1;
+                    nv[2 * (i * uvWidth + j) + 1] = vSample1;
+                    nv[2 * (i * uvWidth + j) + uvWidth] = vSample2;
+                    nv[2 * (i * uvWidth + j) + 1 + uvWidth] = vSample2;
+                }
+            }
+            //nv21test
+            byte[] bytes = new byte[yuvFrame.length];
+            System.arraycopy(y, 0, bytes, 0, y.length);
+            for (int i = 0; i < u.length; i++) {
+                bytes[y.length + (i * 2)] = nv[i];
+                bytes[y.length + (i * 2) + 1] = nu[i];
+            }
+            Log.d(TAG,
+                    "onYuvDataReceived: frame index: "
+                            + DJIVideoStreamDecoder.getInstance().frameIndex
+                            + ",array length: "
+                            + bytes.length);
+            //screenShot(bytes, Environment.getExternalStorageDirectory() + "/DJI_ScreenShot");
+        }
+    }
+
 
 
     private void initUI() {
