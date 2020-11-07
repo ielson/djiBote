@@ -102,14 +102,14 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         setContentView(R.layout.activity_main);
         initUI();
         // The callback for receiving the raw H264 video data for camera live view
-        mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
+        /*mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
             @Override
             public void onReceive(byte[] videoBuffer, int size) {
                 if (mCodecManager != null) {
                     mCodecManager.sendDataToDecoder(videoBuffer, size);
                 }
             }
-        };
+        };*/
     }
 
     @Override
@@ -144,23 +144,18 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     {
         initFlightController();
     }
+
     private void initFlightController() {
-
-
         talker = new Talker("position");
         if (product != null && product.isConnected()) {
             if (product instanceof Aircraft) {
                 mFlightController = ((Aircraft) product).getFlightController();
-
             }
         }
-
     }
 
     protected void onProductChange() {
-        initPreviewer();
     }
-
     private void initPreviewer() {
         product = ConnectionActivity.mProduct;
         if (product == null || !product.isConnected()) {
@@ -170,7 +165,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 mVideoSurface.setSurfaceTextureListener(this);
             }
             if (!product.getModel().equals(Model.UNKNOWN_AIRCRAFT)) {
-                VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(mReceivedVideoDataCallBack);
+//                VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(mReceivedVideoDataCallBack);
+                Log.d(TAG, "Drone model: " + product.getModel());
             }
         }
     }
@@ -190,9 +186,9 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         initPreviewer();
         initFlightController();
         onProductChange();
-        if(mVideoSurface == null) {
+        /*if(mVideoSurface == null) {
             Log.e(TAG, "mVideoSurface is null");
-        }
+        }*/
     }
 
 
@@ -308,21 +304,21 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     private void initUI() {
         // init mVideoSurface
-        mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
+//        mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
         mTakeOffBtn = (Button) findViewById(R.id.btn_take_off);
         mLandBtn = (Button) findViewById(R.id.btn_land);
-        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
-        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
+//        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
+//        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
         mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
 
-
+/*
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);
-        }
+        }*/
 
         mTakeOffBtn.setOnClickListener(this);
         mLandBtn.setOnClickListener(this);
-        mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
+        /*mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
             @Override
             public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
                 if(Math.abs(pX) < 0.02 ){
@@ -361,7 +357,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                     mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 0, 200);
                 }
             }
-        });
+        });*/
     }
 
     @Override
