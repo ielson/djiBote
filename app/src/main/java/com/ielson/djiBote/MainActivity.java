@@ -26,7 +26,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
-import com.ielson.djiBote.media.DJIVideoStreamDecoder;
+import com.dji.videostreamdecodingsample.media.DJIVideoStreamDecoder;
 
 import java.io.File;
 import java.io.FileNotFoundException;

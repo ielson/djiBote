@@ -6,10 +6,14 @@ import android.hardware.Camera;
 import android.os.Bundle;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.dji.videostreamdecodingsample.media.DJIVideoStreamDecoder;
+import com.dji.videostreamdecodingsample.media.NativeHelper;
 
 import dji.sdk.base.BaseProduct;
 import dji.sdk.camera.VideoFeeder;
@@ -33,20 +37,24 @@ public class DjiCameraPreviewView extends ViewGroup {
     private final class TextureViewCallback implements TextureView.SurfaceTextureListener {
 
         @Override
-        public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height){
+        public void onSurfaceTextureAvailable(SurfaceTexture surfaceTexture, int width, int height){
             Log.d(TAG, "onSurfaceTextureAvailable");
             if (mCodecManager == null) {
-                mCodecManager = new DJICodecManager(DjiCameraPreviewView.this.getContext(), surface, width, height);
+                mCodecManager = new DJICodecManager(DjiCameraPreviewView.this.getContext(), surfaceTexture, width, height);
+                Surface surface = new Surface(surfaceTexture);
+                DJIVideoStreamDecoder.getInstance().init(DjiCameraPreviewView.this.getContext(), surface);
+                DJIVideoStreamDecoder.getInstance().setYuvDataListener(new YuvDataListener());
+                Log.e("TAG", "YUV DATA LISTENER CREATED");
             }
         }
 
         @Override
-        public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+        public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
             Log.d(TAG, "onSurfaceTextureChanged");
         }
 
         @Override
-        public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+        public boolean onSurfaceTextureDestroyed(SurfaceTexture surfaceTexture) {
             Log.d(TAG, "onSurfaceTextureDestroyed");
             if (mCodecManager != null) {
                 mCodecManager.cleanSurface();
@@ -56,17 +64,26 @@ public class DjiCameraPreviewView extends ViewGroup {
         }
 
         @Override
-        public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+        public void onSurfaceTextureUpdated(SurfaceTexture surfaceTexture) {
 
         }
 
     }
 
+    private final class YuvDataListener implements DJIVideoStreamDecoder.IYuvDataListener {
+        @Override
+        public void onYuvDataReceived(byte[] yuvFrame, int width, int height) {
+           Log.e("YVU", "YUV DATA RECEIVED");
+        }
+    }
     private void init(Context context){
         TextureView mVideoSurface = new TextureView(context);
         addView(mVideoSurface);
         mVideoSurface.setSurfaceTextureListener(new TextureViewCallback());
         mReceivedVideoDataCallback = new ReceivedVideoDataCallback();
+
+        NativeHelper.getInstance().init();
+
     }
 
     public DjiCameraPreviewView(Context context) {
