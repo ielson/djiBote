@@ -27,6 +27,7 @@ import android.widget.Toast;
 import android.widget.ToggleButton;
 
 import com.dji.videostreamdecodingsample.media.DJIVideoStreamDecoder;
+import com.dji.videostreamdecodingsample.media.NativeHelper;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -186,6 +187,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         initPreviewer();
         initFlightController();
         onProductChange();
+        DJIVideoStreamDecoder.getInstance().resume();
         /*if(mVideoSurface == null) {
             Log.e(TAG, "mVideoSurface is null");
         }*/
@@ -211,6 +213,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     @Override
     public void onPause() {
+        DJIVideoStreamDecoder.getInstance().stop();
         super.onPause();
     }
     @Override
@@ -223,6 +226,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        DJIVideoStreamDecoder.getInstance().destroy();
+        NativeHelper.getInstance().release();
     }
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {

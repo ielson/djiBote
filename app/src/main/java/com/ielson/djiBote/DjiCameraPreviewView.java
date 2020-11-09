@@ -28,7 +28,10 @@ public class DjiCameraPreviewView extends ViewGroup {
     private final class ReceivedVideoDataCallback implements VideoFeeder.VideoDataCallback {
         @Override
         public void onReceive(byte[] bytes, int size) {
+            Log.e(TAG, "onReceive");
             if (mCodecManager!=null) {
+                Log.e(TAG, "camera recv video data size: " + size);
+                DJIVideoStreamDecoder.getInstance().parse(bytes, size);
                 mCodecManager.sendDataToDecoder(bytes, size);
             }
         }
@@ -45,12 +48,20 @@ public class DjiCameraPreviewView extends ViewGroup {
                 DJIVideoStreamDecoder.getInstance().init(DjiCameraPreviewView.this.getContext(), surface);
                 DJIVideoStreamDecoder.getInstance().setYuvDataListener(new YuvDataListener());
                 Log.e("TAG", "YUV DATA LISTENER CREATED");
+//                DJIVideoStreamDecoder.getInstance().resume();
+
+                if (VideoFeeder.getInstance().getPrimaryVideoFeed() != null
+                ) {
+                    VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(mReceivedVideoDataCallback);
+                }
             }
         }
 
         @Override
         public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
             Log.d(TAG, "onSurfaceTextureChanged");
+            Surface surface = new Surface(surfaceTexture);
+            DJIVideoStreamDecoder.getInstance().changeSurface(surface);
         }
 
         @Override
@@ -73,16 +84,17 @@ public class DjiCameraPreviewView extends ViewGroup {
     private final class YuvDataListener implements DJIVideoStreamDecoder.IYuvDataListener {
         @Override
         public void onYuvDataReceived(byte[] yuvFrame, int width, int height) {
-           Log.e("YVU", "YUV DATA RECEIVED");
+           Log.e(TAG, "YUV DATA RECEIVED");
         }
     }
     private void init(Context context){
         TextureView mVideoSurface = new TextureView(context);
         addView(mVideoSurface);
+        NativeHelper.getInstance().init();
         mVideoSurface.setSurfaceTextureListener(new TextureViewCallback());
         mReceivedVideoDataCallback = new ReceivedVideoDataCallback();
 
-        NativeHelper.getInstance().init();
+
 
     }
 
