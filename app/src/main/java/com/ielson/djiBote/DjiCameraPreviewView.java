@@ -8,6 +8,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,14 +29,15 @@ public class DjiCameraPreviewView extends ViewGroup {
     private final class ReceivedVideoDataCallback implements VideoFeeder.VideoDataCallback {
         @Override
         public void onReceive(byte[] bytes, int size) {
-            Log.e(TAG, "onReceive");
+            Log.d(TAG, "onReceive");
             if (mCodecManager!=null) {
-                Log.e(TAG, "camera recv video data size: " + size);
+                Log.d(TAG, "camera recv video data size: " + size);
                 DJIVideoStreamDecoder.getInstance().parse(bytes, size);
                 mCodecManager.sendDataToDecoder(bytes, size);
             }
         }
     }
+
 
     private final class TextureViewCallback implements TextureView.SurfaceTextureListener {
 
@@ -44,12 +46,6 @@ public class DjiCameraPreviewView extends ViewGroup {
             Log.d(TAG, "onSurfaceTextureAvailable");
             if (mCodecManager == null) {
                 mCodecManager = new DJICodecManager(DjiCameraPreviewView.this.getContext(), surfaceTexture, width, height);
-                Surface surface = new Surface(surfaceTexture);
-                DJIVideoStreamDecoder.getInstance().init(DjiCameraPreviewView.this.getContext(), surface);
-                DJIVideoStreamDecoder.getInstance().setYuvDataListener(new YuvDataListener());
-                Log.e("TAG", "YUV DATA LISTENER CREATED");
-//                DJIVideoStreamDecoder.getInstance().resume();
-
                 if (VideoFeeder.getInstance().getPrimaryVideoFeed() != null
                 ) {
                     VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(mReceivedVideoDataCallback);
@@ -82,6 +78,9 @@ public class DjiCameraPreviewView extends ViewGroup {
     }
 
     private final class YuvDataListener implements DJIVideoStreamDecoder.IYuvDataListener {
+        private YuvDataListener(){
+            Log.e(TAG, "YUV Callback Created");
+        }
         @Override
         public void onYuvDataReceived(byte[] yuvFrame, int width, int height) {
            Log.e(TAG, "YUV DATA RECEIVED");
@@ -89,12 +88,42 @@ public class DjiCameraPreviewView extends ViewGroup {
     }
     private void init(Context context){
         TextureView mVideoSurface = new TextureView(context);
+        SurfaceView mVideoYUVSf = new SurfaceView(context);
+        final SurfaceHolder mVideoYUVSh = mVideoYUVSf.getHolder();
         addView(mVideoSurface);
+        addView(mVideoYUVSf);
+
         NativeHelper.getInstance().init();
         mVideoSurface.setSurfaceTextureListener(new TextureViewCallback());
         mReceivedVideoDataCallback = new ReceivedVideoDataCallback();
 
+        mVideoYUVSh.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                Log.d(TAG, "onSurfaceCreated");
+                DJIVideoStreamDecoder.getInstance().init(DjiCameraPreviewView.this.getContext(), null);
+                DJIVideoStreamDecoder.getInstance().setYuvDataListener(new YuvDataListener());
+            }
 
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                Log.e(TAG, "onSurfaceChanged");
+//                DJIVideoStreamDecoder.getInstance().changeSurface(holder.getSurface());
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Log.e(TAG, "onSurfaceDestroyed");
+
+            }
+        });
+
+        Log.e(TAG, "mVideo Largura measuared a surface: " + mVideoYUVSf.getMeasuredWidth());
+        Log.e(TAG, "mVideo altura measured da surface: " + mVideoYUVSf.getMeasuredHeightAndState());
+        Log.e(TAG, "mVideo altura : " + mVideoYUVSf.getHeight());
+        Log.e(TAG, "mVideo Visibilidade: " + mVideoYUVSf.getVisibility());
+        Log.e(TAG, "mVideo Largura: " + mVideoYUVSf.getWidth());
+        Log.e(TAG, "mVideo is activated: " + mVideoYUVSf.isActivated());
 
     }
 
@@ -145,7 +174,8 @@ public class DjiCameraPreviewView extends ViewGroup {
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
         if (changed && getChildCount() > 0) {
-            final View child = getChildAt(0);
+            final View preview = getChildAt(0);
+            final View yuv = getChildAt(1);
             final int width = r - l;
             final int height = b - t;
 
@@ -163,7 +193,8 @@ public class DjiCameraPreviewView extends ViewGroup {
                 final int scaledChildHeight = previewHeight * width / previewWidth;
                 child.layout(0, (height - scaledChildHeight) / 2, width, (height + scaledChildHeight) / 2);
             }*/
-            child.layout(0,0, width, height);
+            preview.layout(0,0, width/2, height/2);
+            yuv.layout(width/2, height/2, width, height);
         }
     }
 }

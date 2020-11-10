@@ -219,6 +219,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     @Override
     public void onStop() {
         super.onStop();
+
     }
     public void onReturn(View view){
         this.finish();
