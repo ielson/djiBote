@@ -9,6 +9,7 @@ import android.util.Log;
 import org.ros.concurrent.CancellableLoop;
 import org.ros.message.Time;
 import org.ros.namespace.GraphName;
+import org.ros.namespace.NameResolver;
 import org.ros.node.AbstractNodeMain;
 import org.ros.node.ConnectedNode;
 import org.ros.node.NodeMain;
@@ -26,14 +27,13 @@ import std_msgs.Header;
 
 public class Talker extends AbstractNodeMain {
     private String topic_name;
+    private ConnectedNode connectedNode;
     Publisher<geometry_msgs.Point> posPublisher;
     Publisher<geometry_msgs.Point> rpyPublisher;
     Publisher<geometry_msgs.Point> velsPublisher;
     Publisher<std_msgs.Int32> headingPublisher;
     Publisher<std_msgs.Int32> flightTimePublisher;
     Publisher<std_msgs.Int32> goHomePublisher;
-    Publisher<sensor_msgs.Image> videoPublisher;
-
 
     // message type vai ter que estar aqui tambem
     public static double positionX;
@@ -48,7 +48,6 @@ public class Talker extends AbstractNodeMain {
     public static double xVelocity;
     public static double yVelocity;
     public static double zVelocity;
-    public static Image videoFeed;
 
     public Talker() {
         topic_name = "chatter";
@@ -62,7 +61,7 @@ public class Talker extends AbstractNodeMain {
 
     @Override
     public GraphName getDefaultNodeName() {
-        return GraphName.of("rosjava_tutorial_pubsub/talker");
+        return GraphName.of("djiBote/SensorInfo");
     }
 
     @Override
@@ -71,33 +70,23 @@ public class Talker extends AbstractNodeMain {
         final Publisher<std_msgs.String> publisher =
                 connectedNode.newPublisher(topic_name, std_msgs.String._TYPE);
         */
-        posPublisher = connectedNode.newPublisher(topic_name, Point._TYPE);
-        // This CancellableLoop will be canceled automatically when the node shuts
-        // down.
-        rpyPublisher = connectedNode.newPublisher(GraphName.of("rpy"), Point._TYPE);
-        velsPublisher = connectedNode.newPublisher(GraphName.of("vels"), Point._TYPE);
-        headingPublisher = connectedNode.newPublisher(GraphName.of("heading"), Int32._TYPE);
-        flightTimePublisher = connectedNode.newPublisher(GraphName.of("flightTime"), Int32._TYPE);
-        goHomePublisher = connectedNode.newPublisher(GraphName.of("goHomeHeight"), Int32._TYPE);
+        this.connectedNode = connectedNode;
+        NameResolver resolver = connectedNode.getResolver().newChild("sensorInfo");
+        posPublisher = connectedNode.newPublisher(resolver.resolve("pose/position"), Point._TYPE);
+        rpyPublisher = connectedNode.newPublisher(resolver.resolve("pose/orientation/rpy"), Point._TYPE);
+        velsPublisher = connectedNode.newPublisher(resolver.resolve("twist/linear"), Point._TYPE);
+        headingPublisher = connectedNode.newPublisher(resolver.resolve("twist/heading"), Int32._TYPE);
+        flightTimePublisher = connectedNode.newPublisher(resolver.resolve("flightTimeRemaining"), Int32._TYPE);
+        goHomePublisher = connectedNode.newPublisher(resolver.resolve("goHomePublisher"), Int32._TYPE);
 
-        videoPublisher = connectedNode.newPublisher(GraphName.of("videoFeed"), Image._TYPE);
-
-        final Image videoFeedMsg = videoPublisher.newMessage();
-        Header header = videoFeedMsg.getHeader();
-        header.setStamp(connectedNode.getCurrentTime());
-//        videoFeedMsg.setHeight();
-//        videoFeedMsg.setWidth();
-//        videoFeedMsg.setEncoding();
-//        videoFeedMsg.setIsBigendian();
-//        videoFeedMsg.setStep();
-//        videoFeedMsg.setData();
-        
+        Log.d("Talker", "publishers created");
         MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
             @Override
             public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
                 new Handler(Looper.getMainLooper()).post(new Runnable() {
                     @Override
                     public void run() {
+                        Log.d("Talker", "Updating var status");
                         yaw = flightControllerState.getAttitude().yaw;
                         pitch = flightControllerState.getAttitude().pitch;
                         roll = flightControllerState.getAttitude().roll;
@@ -120,31 +109,37 @@ public class Talker extends AbstractNodeMain {
                         pos.setY(positionY);
                         pos.setZ(positionZ);
                         posPublisher.publish(pos);
+                        Log.d("Talker", "pos msg published");
 
                         Point rpy = rpyPublisher.newMessage();
                         rpy.setX(yaw);
                         rpy.setY(pitch);
                         rpy.setZ(roll);
                         rpyPublisher.publish(rpy);
+                        Log.d("Talker", "rpy msg published");
 
                         Point vels = velsPublisher.newMessage();
                         vels.setX(xVelocity);
                         vels.setY(yVelocity);
                         vels.setZ(zVelocity);
                         velsPublisher.publish(vels);
+                        Log.d("Talker", "vels msg published");
 
                         Int32 headMsg = headingPublisher.newMessage();
                         headMsg.setData(headDirection);
                         headingPublisher.publish(headMsg);
+                        Log.d("Talker", "heading msg published");
 
                         Int32 flightTimeMsg = flightTimePublisher.newMessage();
                         flightTimeMsg.setData(flightTime);
                         flightTimePublisher.publish(flightTimeMsg);
+                        Log.d("Talker", "flight time msg published");
 
                         Int32 goHomeHeightMsg = goHomePublisher.newMessage();
                         goHomeHeightMsg.setData(goHomeHeight);
                         goHomePublisher.publish(goHomeHeightMsg);
-                        
+                        Log.d("Talker", "goHome msg published");
+
 
                     }
                 });

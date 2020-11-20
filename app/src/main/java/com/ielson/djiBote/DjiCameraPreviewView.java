@@ -3,9 +3,12 @@ package com.ielson.djiBote;
 import android.content.Context;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.util.Size;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -24,7 +27,8 @@ public class DjiCameraPreviewView extends ViewGroup {
     private static final String TAG = DjiCameraPreviewView.class.getName();
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallback = null;
     protected DJICodecManager mCodecManager = null;
-    private Camera.Size previewSize;
+    private static RawImageListener rawImageListener;
+    private Size imageSize;
 
     private final class ReceivedVideoDataCallback implements VideoFeeder.VideoDataCallback {
         @Override
@@ -81,9 +85,18 @@ public class DjiCameraPreviewView extends ViewGroup {
         private YuvDataListener(){
             Log.e(TAG, "YUV Callback Created");
         }
+        @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
         @Override
         public void onYuvDataReceived(byte[] yuvFrame, int width, int height) {
-           Log.e(TAG, "YUV DATA RECEIVED");
+           Log.d(TAG, "YUV DATA RECEIVED");
+           Log.d(TAG, "YUV Raw Image Listener = " + DjiCameraPreviewView.rawImageListener);
+//           Log.e(TAG, "YUV this Raw image listener = " + this.rawImageListener);
+           if (rawImageListener != null) {
+//               imageSize = camera.new Size(width, height);
+               imageSize = new Size(width, height);
+               rawImageListener.onNewRawImage(yuvFrame, imageSize);
+               Log.d(TAG, "Raw YUV Image sent to listener");
+           }
         }
     }
     private void init(Context context){
@@ -107,23 +120,23 @@ public class DjiCameraPreviewView extends ViewGroup {
 
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-                Log.e(TAG, "onSurfaceChanged");
+                Log.d(TAG, "onSurfaceChanged");
 //                DJIVideoStreamDecoder.getInstance().changeSurface(holder.getSurface());
             }
 
             @Override
             public void surfaceDestroyed(SurfaceHolder holder) {
-                Log.e(TAG, "onSurfaceDestroyed");
+                Log.d(TAG, "onSurfaceDestroyed");
 
             }
         });
 
-        Log.e(TAG, "mVideo Largura measuared a surface: " + mVideoYUVSf.getMeasuredWidth());
-        Log.e(TAG, "mVideo altura measured da surface: " + mVideoYUVSf.getMeasuredHeightAndState());
-        Log.e(TAG, "mVideo altura : " + mVideoYUVSf.getHeight());
-        Log.e(TAG, "mVideo Visibilidade: " + mVideoYUVSf.getVisibility());
-        Log.e(TAG, "mVideo Largura: " + mVideoYUVSf.getWidth());
-        Log.e(TAG, "mVideo is activated: " + mVideoYUVSf.isActivated());
+        Log.d(TAG, "mVideo Largura measuared a surface: " + mVideoYUVSf.getMeasuredWidth());
+        Log.d(TAG, "mVideo altura measured da surface: " + mVideoYUVSf.getMeasuredHeightAndState());
+        Log.d(TAG, "mVideo altura : " + mVideoYUVSf.getHeight());
+        Log.d(TAG, "mVideo Visibilidade: " + mVideoYUVSf.getVisibility());
+        Log.d(TAG, "mVideo Largura: " + mVideoYUVSf.getWidth());
+        Log.d(TAG, "mVideo is activated: " + mVideoYUVSf.isActivated());
 
     }
 
@@ -146,6 +159,12 @@ public class DjiCameraPreviewView extends ViewGroup {
 
     //vou ter que criar uma interface pra o rawImageListener
     //add o rawImageListener
+
+    public void setRawImageListener(RawImageListener rawImageListener) {
+        Log.d(TAG, "Setting ROS raw Image Listener + " + rawImageListener);
+        this.rawImageListener = rawImageListener;
+        Log.e(TAG, "Set rawImageListener to: " + this.rawImageListener);
+    }
 
     /*
         public Camera.Size getPreviewSize() {

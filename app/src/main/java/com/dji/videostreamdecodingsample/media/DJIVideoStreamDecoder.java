@@ -156,7 +156,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
         if (!DEBUG) {
             return;
         }
-        Log.d(tag, log);
+        Log.e(tag, log);
     }
     private void loge(String tag, String log) {
         if (!DEBUG) {
@@ -173,6 +173,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
     }
 
     private DJIVideoStreamDecoder() {
+        Log.e(TAG, "onDJIVideoStreamDecoder constructor");
         createTime = System.currentTimeMillis();
         frameQueue = new ArrayBlockingQueue<DJIFrame>(BUF_QUEUE_SIZE);
         startDataHandler();
@@ -195,6 +196,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
         if (instance == null) {
             instance = new DJIVideoStreamDecoder();
         }
+//        Log.e(TAG, "onDJIVideoStreamDecoder.getInstance");
         return instance;
     }
 
@@ -206,6 +208,8 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * should set "null" surface when calling the "configure" method of MediaCodec.
      */
     public void init(Context context, Surface surface) {
+        Log.e(TAG, "onDJIVideoStreamDecoder init");
+        Log.e(TAG, "Decoder initialized, surface: " + surface);
         this.context = context;
         this.surface = surface;
         NativeHelper.getInstance().setDataListener(this);
@@ -220,6 +224,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * @param size Data length
      */
     public void parse(byte[] buf, int size) {
+//        Log.e(TAG, "onDJIVideoStreamDecoder parse");
         logd( "parse data size: " + size);
         Message message =handlerNew.obtainMessage();
         message.obj = buf;
@@ -235,6 +240,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * @return Resource ID of the IDR frame
      */
     public int getIframeRawId(Model pModel, int width) {
+//        Log.d(TAG, "onDJIVideoStreamDecoder getIFrameRawId");
         int iframeId = R.raw.iframe_1280x720_ins;
 
         switch(pModel) {
@@ -353,6 +359,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * @throws IOException
      */
     private byte[] getDefaultKeyFrame(int width) throws IOException {
+        Log.e(TAG, "onDJIVideoStreamDecoder getDefaultKeyFrame");
         BaseProduct product = DJISDKManager.getInstance().getProduct();
         if (product == null || product.getModel() == null) {
             return null;
@@ -377,6 +384,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * Initialize the hardware decoder.
      */
     private void initCodec() {
+        Log.d(TAG, "onDJIVideoStreamDecoder initCodec");
         if (width == 0 || height == 0) {
             return;
         }
@@ -394,10 +402,13 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Planar);
         } else {
             logd("initVideoDecoder: display");
+            logd("init video decoder surface: " + surface);
             // The surface is set, so the color format should be set to format surface.
             format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
         }
+//        Log.e("TESTE", "TESTE");
         try {
+//            Log.e("TESTE2", "TESTE2");
             // Create the codec instance.
             codec = MediaCodec.createDecoderByType(VIDEO_ENCODING_FORMAT);
             logd( "initVideoDecoder create: " + (codec == null));
@@ -405,7 +416,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
             // any yuv data if a surface is configured into, which mean that if you want the yuv frames, you
             // should set "null" surface when calling the "configure" method of MediaCodec.
             codec.configure(format, surface, null, 0);
-            logd( "initVideoDecoder configure");
+            logd( "initVideoDecoder configure!");
             //            codec.configure(format, null, null, 0);
             if (codec == null) {
                 loge("Can't find video info!");
@@ -430,6 +441,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
     }
 
     private void startDataHandler() {
+        Log.d(TAG, "onDJIVideoStreamDecoder startDataHandler");
         if (dataHandlerThread != null && dataHandlerThread.isAlive()) {
             return;
         }
@@ -492,6 +504,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * Stop the data processing thread
      */
     private void stopDataHandler() {
+        Log.d(TAG, "onDJIVideoStreamDecoder stop Data Handler");
         if (dataHandlerThread == null || !dataHandlerThread.isAlive()) {
             return;
         }
@@ -521,6 +534,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * @param surface
      */
     public void changeSurface(Surface surface) {
+        Log.d(TAG, "onDJIVideoStreamDecoder changeSurface");
         this.surface = surface;
         if (dataHandler != null && !dataHandler.hasMessages(MSG_INIT_CODEC)) {
             dataHandler.sendEmptyMessage(MSG_INIT_CODEC);
@@ -531,6 +545,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * Release and close the codec.
      */
     private void releaseCodec() {
+        Log.d(TAG, "onDJIVideoStreamDecoder releaseCodec");
         if (frameQueue!=null){
             frameQueue.clear();
             hasIFrameInQueue = false;
@@ -559,6 +574,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * @param msg
      */
     private void onFrameQueueIn(Message msg) {
+        Log.d(TAG, "onDJIVideoStreamDecoder onFrameQueueIn");
         DJIFrame inputFrame = (DJIFrame)msg.obj;
         if (inputFrame == null) {
             return;
@@ -629,6 +645,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      */
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     private void decodeFrame() throws Exception {
+        Log.d(TAG, "onDJIVideoStreamDecoder decodeFrame");
         DJIFrame inputFrame = frameQueue.poll();
         if (inputFrame == null) {
             return;
@@ -721,6 +738,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
      * Stop the decoding process.
      */
     public void stop() {
+        Log.d(TAG, "onDJIVideoStreamDecoder stop");
         dataHandler.removeCallbacksAndMessages(null);
         frameQueue.clear();
         hasIFrameInQueue = false;
@@ -743,6 +761,7 @@ public class DJIVideoStreamDecoder implements NativeHelper.NativeDataListener {
 
     @Override
     public void onDataRecv(byte[] data, int size, int frameNum, boolean isKeyFrame, int width, int height) {
+        Log.d(TAG, "onDJIVideoStreamDecoder onDataRecv");
         if (dataHandler == null || dataHandlerThread == null || !dataHandlerThread.isAlive()) {
             return;
         }

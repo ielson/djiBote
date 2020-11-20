@@ -63,7 +63,7 @@ import org.ros.node.NodeMainExecutor;
 
 
 
-public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener, DJIVideoStreamDecoder.IYuvDataListener {
+public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
     protected TextureView mVideoSurface = null;
     private Button mLandBtn, mTakeOffBtn;
@@ -86,6 +86,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     protected DJICodecManager mCodecManager = null;
 
     private Talker talker;
+    private RosDjiCameraPreviewView rosDjiCameraPreviewView;
 
 
 
@@ -117,20 +118,34 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     protected void init(NodeMainExecutor nodeMainExecutor) {
         // At this point, the user has already been prompted to either enter the URI
         // of a master to use or to start a master locally.
-        NodeConfiguration nodeConfiguration = NodeConfiguration.newPublic(getRosHostname());
-        nodeConfiguration.setMasterUri(getMasterUri());
-        Log.d("Master URI ", getMasterUri().toString());
-        Log.d("ROS HOSTNAME", EnvironmentVariables.ROS_HOSTNAME);
-        Log.d("ROS IP", EnvironmentVariables.ROS_IP);
-        Log.d("ROS MASTER URI", EnvironmentVariables.ROS_MASTER_URI);
-        Log.d("ROS HOSTNAME", EnvironmentVariables.ROS_ROOT);
-        //Log.d("Node name", nodeConfiguration.getNodeName().toString());
+//        NodeConfiguration nodeConfiguration = NodeConfiguration.newPublic(getRosHostname());
+//        nodeConfiguration.setMasterUri(getMasterUri());
+        try {
+            java.net.Socket socket = new java.net.Socket(getMasterUri().getHost(), getMasterUri().getPort());
+            java.net.InetAddress local_network_address = socket.getLocalAddress();
+            socket.close();
+            NodeConfiguration nodeConfiguration =
+                    NodeConfiguration.newPublic(local_network_address.getHostAddress(), getMasterUri());
+            Log.d("configuracao Master URI", getMasterUri().toString());
+            Log.d("configuracao ROS HOSTN", getRosHostname());
+            Log.d("configuracao ROS IP", EnvironmentVariables.ROS_IP);
+            Log.d("configuracao ROS M URI", EnvironmentVariables.ROS_MASTER_URI);
+            Log.d("configuracao ROS HNAME", EnvironmentVariables.ROS_ROOT);
+            //Log.d("Node name", nodeConfiguration.getNodeName().toString());
+            Log.e(TAG, "node configuration: " + nodeConfiguration);
+            nodeMainExecutor.execute(talker, nodeConfiguration);
+            nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
+
+        }
+        catch (IOException e) {
+            Log.e("Camera Tutorial", "socket error trying to get networking information from the master uri");
+        }
 
 
 
-
-
-        nodeMainExecutor.execute(talker, nodeConfiguration);
+//        Log.e(TAG, "node configuration: " + nodeConfiguration);
+//        nodeMainExecutor.execute(talker, nodeConfiguration);
+//        nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
         //nodeMainExecutor.execute(rosTextView, nodeConfiguration);
     }
 
@@ -153,6 +168,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 mFlightController = ((Aircraft) product).getFlightController();
             }
         }
+
+//       rosDjiCameraPreviewView = new RosDjiCameraPreviewView(this.getApplicationContext());
     }
 
     protected void onProductChange() {
@@ -257,54 +274,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
 
 
-    @Override
-    public void onYuvDataReceived(byte[] yuvFrame, int width, int height) {
-        Log.e(TAG, "YUV");
-        //In this demo, we test the YUV data by saving it into JPG files.
-        if (DJIVideoStreamDecoder.getInstance().frameIndex % 30 == 0) {
-            byte[] y = new byte[width * height];
-            byte[] u = new byte[width * height / 4];
-            byte[] v = new byte[width * height / 4];
-            byte[] nu = new byte[width * height / 4]; //
-            byte[] nv = new byte[width * height / 4];
-            System.arraycopy(yuvFrame, 0, y, 0, y.length);
-            for (int i = 0; i < u.length; i++) {
-                v[i] = yuvFrame[y.length + 2 * i];
-                u[i] = yuvFrame[y.length + 2 * i + 1];
-            }
-            int uvWidth = width / 2;
-            int uvHeight = height / 2;
-            for (int j = 0; j < uvWidth / 2; j++) {
-                for (int i = 0; i < uvHeight / 2; i++) {
-                    byte uSample1 = u[i * uvWidth + j];
-                    byte uSample2 = u[i * uvWidth + j + uvWidth / 2];
-                    byte vSample1 = v[(i + uvHeight / 2) * uvWidth + j];
-                    byte vSample2 = v[(i + uvHeight / 2) * uvWidth + j + uvWidth / 2];
-                    nu[2 * (i * uvWidth + j)] = uSample1;
-                    nu[2 * (i * uvWidth + j) + 1] = uSample1;
-                    nu[2 * (i * uvWidth + j) + uvWidth] = uSample2;
-                    nu[2 * (i * uvWidth + j) + 1 + uvWidth] = uSample2;
-                    nv[2 * (i * uvWidth + j)] = vSample1;
-                    nv[2 * (i * uvWidth + j) + 1] = vSample1;
-                    nv[2 * (i * uvWidth + j) + uvWidth] = vSample2;
-                    nv[2 * (i * uvWidth + j) + 1 + uvWidth] = vSample2;
-                }
-            }
-            //nv21test
-            byte[] bytes = new byte[yuvFrame.length];
-            System.arraycopy(y, 0, bytes, 0, y.length);
-            for (int i = 0; i < u.length; i++) {
-                bytes[y.length + (i * 2)] = nv[i];
-                bytes[y.length + (i * 2) + 1] = nu[i];
-            }
-            Log.d(TAG,
-                    "onYuvDataReceived: frame index: "
-                            + DJIVideoStreamDecoder.getInstance().frameIndex
-                            + ",array length: "
-                            + bytes.length);
-            //screenShot(bytes, Environment.getExternalStorageDirectory() + "/DJI_ScreenShot");
-        }
-    }
 
 
 
@@ -316,7 +285,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 //        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
 //        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
         mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
-
+        rosDjiCameraPreviewView = (RosDjiCameraPreviewView) findViewById(R.id.ros_dji_camera_preview_view);
 /*
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);

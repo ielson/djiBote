@@ -15,8 +15,8 @@
         android:layout_marginRight="40dp"
         android:text="TextView" />
 
-    <com.ielson.djiBote.DjiCameraPreviewView
-        android:id="@+id/dji_camera_preview_view"
+    <com.ielson.djiBote.RosDjiCameraPreviewView
+        android:id="@+id/ros_dji_camera_preview_view"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" />
 
