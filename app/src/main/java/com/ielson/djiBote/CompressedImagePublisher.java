@@ -1,6 +1,8 @@
 package com.ielson.djiBote;
 
 import com.google.common.base.Preconditions;
+
+import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
@@ -42,9 +44,11 @@ class CompressedImagePublisher implements com.ielson.djiBote.RawImageListener {
     private YuvImage yuvImage;
     private Rect rect;
     private ChannelBufferOutputStream stream;
+    private Context context;
 
-    public CompressedImagePublisher(ConnectedNode connectedNode) {
+    public CompressedImagePublisher(Context context, ConnectedNode connectedNode) {
         this.connectedNode = connectedNode;
+        this.context = context;
         NameResolver resolver = connectedNode.getResolver().newChild("camera");
         imagePublisher =
                 connectedNode.newPublisher(resolver.resolve("image/compressed"),
@@ -83,8 +87,8 @@ class CompressedImagePublisher implements com.ielson.djiBote.RawImageListener {
             image.setData(stream.buffer().copy());
             stream.buffer().clear();
 
-//            screenShot(yuvImage, rect, Environment.getExternalStorageDirectory() + "/bote_screenshot");
-            Log.e("COMP IMG PUB", "dir: " + Environment.getExternalStorageDirectory() + "/bote_screenshot");
+//            screenShot(yuvImage, rect, context.getExternalFilesDir(null)  + "/bote2_screenshot");
+//            Log.e("COMP IMG PUB", "dir: " + context.getExternalFilesDir(null) + "/bote_screenshot");
             imagePublisher.publish(image);
             Log.e("COMP IMG PUB", "Image Published");
         } catch (Exception e) {
@@ -115,7 +119,7 @@ class CompressedImagePublisher implements com.ielson.djiBote.RawImageListener {
             Log.e("COMP IMG PUB", "File not found" + e);
         }
         if (outputFile != null) {
-            yuvImage.compressToJpeg(rect, 20, outputFile);
+            yuvImage.compressToJpeg(rect, 100, outputFile);
             Log.e("COMP IMG PUB", "output file: " + path);
         }
         try {

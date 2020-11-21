@@ -28,7 +28,7 @@
         android:layout_alignParentBottom="true"
         android:id="@+id/linearLayout">
 
-        <!--
+
         <com.ielson.djiBote.OnScreenJoystick
             android:id="@+id/directionJoystickRight"
             android:layout_width="130dp"
@@ -48,7 +48,7 @@
             android:layout_marginBottom="10dp"
             android:layout_marginRight="10dp"
             android:background="@mipmap/joystick_bg"/>
-            -->
+
         <Button
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

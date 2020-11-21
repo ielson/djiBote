@@ -16,6 +16,7 @@ import org.ros.node.NodeMain;
 import org.ros.node.topic.Publisher;
 
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.simulator.SimulatorState;
 import dji.midware.data.model.P3.DataFlycGetPushFlightRecord;
 import geometry_msgs.Point;
 import geometry_msgs.Pose;
@@ -80,72 +81,109 @@ public class Talker extends AbstractNodeMain {
         goHomePublisher = connectedNode.newPublisher(resolver.resolve("goHomePublisher"), Int32._TYPE);
 
         Log.d("Talker", "publishers created");
-        MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
-            @Override
-            public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
-                new Handler(Looper.getMainLooper()).post(new Runnable() {
-                    @Override
-                    public void run() {
-                        Log.d("Talker", "Updating var status");
-                        yaw = flightControllerState.getAttitude().yaw;
-                        pitch = flightControllerState.getAttitude().pitch;
-                        roll = flightControllerState.getAttitude().roll;
-                        positionX = flightControllerState.getAircraftLocation().getLatitude();
-                        positionY = flightControllerState.getAircraftLocation().getLongitude();
-                        positionZ = flightControllerState.getAircraftLocation().getAltitude();
+        if (!MainActivity.useSimulator) {
+            MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
+                @Override
+                public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d("Talker", "Updating var status");
+                            yaw = flightControllerState.getAttitude().yaw;
+                            pitch = flightControllerState.getAttitude().pitch;
+                            roll = flightControllerState.getAttitude().roll;
+                            positionX = flightControllerState.getAircraftLocation().getLatitude();
+                            positionY = flightControllerState.getAircraftLocation().getLongitude();
+                            positionZ = flightControllerState.getAircraftLocation().getAltitude();
 
-                        headDirection = flightControllerState.getAircraftHeadDirection();
-                        flightTime = flightControllerState.getFlightTimeInSeconds();
-                        goHomeHeight = flightControllerState.getGoHomeHeight();
-                        xVelocity = flightControllerState.getVelocityX();
-                        yVelocity = flightControllerState.getVelocityY();
-                        zVelocity = flightControllerState.getVelocityZ();
-
-
-                        MainActivity.mTextView.setText("Yaw : " + String.format("%.2f", yaw) + ", Pitch : " + String.format("%.2f", pitch) + ", Roll : " + String.format("%.2f", roll) + "\n" +
-                                ", PosX : " + String.format("%.2f", positionX) + ", PosY : " + String.format("%.2f", positionY) + ", PosZ : " + String.format("%.2f", positionZ));
-                        Point pos = posPublisher.newMessage();
-                        pos.setX(positionX);
-                        pos.setY(positionY);
-                        pos.setZ(positionZ);
-                        posPublisher.publish(pos);
-                        Log.d("Talker", "pos msg published");
-
-                        Point rpy = rpyPublisher.newMessage();
-                        rpy.setX(yaw);
-                        rpy.setY(pitch);
-                        rpy.setZ(roll);
-                        rpyPublisher.publish(rpy);
-                        Log.d("Talker", "rpy msg published");
-
-                        Point vels = velsPublisher.newMessage();
-                        vels.setX(xVelocity);
-                        vels.setY(yVelocity);
-                        vels.setZ(zVelocity);
-                        velsPublisher.publish(vels);
-                        Log.d("Talker", "vels msg published");
-
-                        Int32 headMsg = headingPublisher.newMessage();
-                        headMsg.setData(headDirection);
-                        headingPublisher.publish(headMsg);
-                        Log.d("Talker", "heading msg published");
-
-                        Int32 flightTimeMsg = flightTimePublisher.newMessage();
-                        flightTimeMsg.setData(flightTime);
-                        flightTimePublisher.publish(flightTimeMsg);
-                        Log.d("Talker", "flight time msg published");
-
-                        Int32 goHomeHeightMsg = goHomePublisher.newMessage();
-                        goHomeHeightMsg.setData(goHomeHeight);
-                        goHomePublisher.publish(goHomeHeightMsg);
-                        Log.d("Talker", "goHome msg published");
+                            headDirection = flightControllerState.getAircraftHeadDirection();
+                            flightTime = flightControllerState.getFlightTimeInSeconds();
+                            goHomeHeight = flightControllerState.getGoHomeHeight();
+                            xVelocity = flightControllerState.getVelocityX();
+                            yVelocity = flightControllerState.getVelocityY();
+                            zVelocity = flightControllerState.getVelocityZ();
 
 
-                    }
-                });
-            }
-        });
+                            MainActivity.mTextView.setText("Yaw : " + String.format("%.2f", yaw) + ", Pitch : " + String.format("%.2f", pitch) + ", Roll : " + String.format("%.2f", roll) + "\n" +
+                                    ", PosX : " + String.format("%.2f", positionX) + ", PosY : " + String.format("%.2f", positionY) + ", PosZ : " + String.format("%.2f", positionZ));
+                            Point pos = posPublisher.newMessage();
+                            pos.setX(positionX);
+                            pos.setY(positionY);
+                            pos.setZ(positionZ);
+                            posPublisher.publish(pos);
+                            Log.d("Talker", "pos msg published");
+
+                            Point rpy = rpyPublisher.newMessage();
+                            rpy.setX(yaw);
+                            rpy.setY(pitch);
+                            rpy.setZ(roll);
+                            rpyPublisher.publish(rpy);
+                            Log.d("Talker", "rpy msg published");
+
+                            Point vels = velsPublisher.newMessage();
+                            vels.setX(xVelocity);
+                            vels.setY(yVelocity);
+                            vels.setZ(zVelocity);
+                            velsPublisher.publish(vels);
+                            Log.d("Talker", "vels msg published");
+
+                            Int32 headMsg = headingPublisher.newMessage();
+                            headMsg.setData(headDirection);
+                            headingPublisher.publish(headMsg);
+                            Log.d("Talker", "heading msg published");
+
+                            Int32 flightTimeMsg = flightTimePublisher.newMessage();
+                            flightTimeMsg.setData(flightTime);
+                            flightTimePublisher.publish(flightTimeMsg);
+                            Log.d("Talker", "flight time msg published");
+
+                            Int32 goHomeHeightMsg = goHomePublisher.newMessage();
+                            goHomeHeightMsg.setData(goHomeHeight);
+                            goHomePublisher.publish(goHomeHeightMsg);
+                            Log.d("Talker", "goHome msg published");
 
 
+                        }
+                    });
+                }
+            });
+
+        }
+        else {
+            MainActivity.mFlightController.getSimulator().setStateCallback(new SimulatorState.Callback() {
+                @Override
+                public void onUpdate(final SimulatorState simulatorState) {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.d("Talker", "Updating var status");
+                            yaw = simulatorState.getYaw();
+                            pitch = simulatorState.getPitch();
+                            roll = simulatorState.getRoll();
+                            positionX = simulatorState.getPositionX();
+                            positionY = simulatorState.getPositionY();
+                            positionZ = simulatorState.getPositionZ();
+
+                           MainActivity.mTextView.setText("Yaw : " + String.format("%.2f", yaw) + ", Pitch : " + String.format("%.2f", pitch) + ", Roll : " + String.format("%.2f", roll) + "\n" +
+                                    ", PosX : " + String.format("%.2f", positionX) + ", PosY : " + String.format("%.2f", positionY) + ", PosZ : " + String.format("%.2f", positionZ));
+                            Point pos = posPublisher.newMessage();
+                            pos.setX(positionX);
+                            pos.setY(positionY);
+                            pos.setZ(positionZ);
+                            posPublisher.publish(pos);
+                            Log.d("Talker", "pos msg published");
+
+                            Point rpy = rpyPublisher.newMessage();
+                            rpy.setX(yaw);
+                            rpy.setY(pitch);
+                            rpy.setZ(roll);
+                            rpyPublisher.publish(rpy);
+                            Log.d("Talker", "rpy msg published");
+
+                        }
+                    });
+                }
+            });
+        }
     }
 }

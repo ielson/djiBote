@@ -38,7 +38,13 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.simulator.InitializationData;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
+import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
+import dji.common.flightcontroller.virtualstick.RollPitchControlMode;
+import dji.common.flightcontroller.virtualstick.VerticalControlMode;
+import dji.common.flightcontroller.virtualstick.YawControlMode;
+import dji.common.model.LocationCoordinate2D;
 import dji.common.product.Model;
 import dji.common.util.CommonCallbacks;
 import dji.sdk.base.BaseProduct;
@@ -82,11 +88,13 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private float mRoll;
     private float mYaw;
     private float mThrottle;
+    public final static boolean useSimulator = true;
 
     protected DJICodecManager mCodecManager = null;
 
     private Talker talker;
     private RosDjiCameraPreviewView rosDjiCameraPreviewView;
+    private CmdVelListener cmdVelListener;
 
 
 
@@ -102,6 +110,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        cmdVelListener = new CmdVelListener(MainActivity.this);
         initUI();
         // The callback for receiving the raw H264 video data for camera live view
         /*mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
@@ -135,6 +144,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             Log.e(TAG, "node configuration: " + nodeConfiguration);
             nodeMainExecutor.execute(talker, nodeConfiguration);
             nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
+            nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
 
         }
         catch (IOException e) {
@@ -168,8 +178,25 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 mFlightController = ((Aircraft) product).getFlightController();
             }
         }
-
+        if (mFlightController != null) {
+            mFlightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
+            mFlightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
+            mFlightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
+            mFlightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
 //       rosDjiCameraPreviewView = new RosDjiCameraPreviewView(this.getApplicationContext());
+            if (useSimulator) {
+                mFlightController.getSimulator().start(InitializationData.createInstance(new LocationCoordinate2D(23, 113), 10, 10), new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        if (djiError != null) {
+                            Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(MainActivity.this, "Started Simulator", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                });
+            }
+        }
     }
 
     protected void onProductChange() {
@@ -218,7 +245,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 mFlightController.sendVirtualStickFlightControlData(
                         new FlightControlData(
                                 mPitch, mRoll, mYaw, mThrottle
-                        ), new CommonCallbacks.CompletionCallback() {
+                        ), new CommonCallbacks.CompletionCallback() { 
                             @Override
                             public void onResult(DJIError djiError) {
                             }
@@ -282,8 +309,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 //        mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
         mTakeOffBtn = (Button) findViewById(R.id.btn_take_off);
         mLandBtn = (Button) findViewById(R.id.btn_land);
-//        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
-//        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
+        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
+        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
         mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
         rosDjiCameraPreviewView = (RosDjiCameraPreviewView) findViewById(R.id.ros_dji_camera_preview_view);
 /*
@@ -293,44 +320,70 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
         mTakeOffBtn.setOnClickListener(this);
         mLandBtn.setOnClickListener(this);
-        /*mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
+        mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
+
             @Override
             public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
                 if(Math.abs(pX) < 0.02 ){
                     pX = 0;
                 }
+
                 if(Math.abs(pY) < 0.02 ){
                     pY = 0;
                 }
                 float pitchJoyControlMaxSpeed = 10;
                 float rollJoyControlMaxSpeed = 10;
+
                 mPitch = (float)(pitchJoyControlMaxSpeed * pX);
+
                 mRoll = (float)(rollJoyControlMaxSpeed * pY);
+
                 if (null == mSendVirtualStickDataTimer) {
                     mSendVirtualStickDataTask = new SendVirtualStickDataTask();
                     mSendVirtualStickDataTimer = new Timer();
                     mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
                 }
+
             }
+
         });
+
         mScreenJoystickRight.setJoystickListener(new OnScreenJoystickListener() {
+
             @Override
             public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
                 if(Math.abs(pX) < 0.02 ){
                     pX = 0;
                 }
+
                 if(Math.abs(pY) < 0.02 ){
                     pY = 0;
                 }
                 float verticalJoyControlMaxSpeed = 2;
                 float yawJoyControlMaxSpeed = 30;
+
                 mYaw = (float)(yawJoyControlMaxSpeed * pX);
                 mThrottle = (float)(verticalJoyControlMaxSpeed * pY);
+
                 if (null == mSendVirtualStickDataTimer) {
                     mSendVirtualStickDataTask = new SendVirtualStickDataTask();
                     mSendVirtualStickDataTimer = new Timer();
                     mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 0, 200);
                 }
+
+            }
+        });
+        /*mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
+
+            @Override
+            public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
+            }
+        });
+
+        mScreenJoystickRight.setJoystickListener(new OnScreenJoystickListener() {
+
+            @Override
+            public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
             }
         });*/
     }

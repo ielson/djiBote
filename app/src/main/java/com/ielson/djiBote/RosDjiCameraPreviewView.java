@@ -35,7 +35,7 @@ public class RosDjiCameraPreviewView extends DjiCameraPreviewView implements Nod
     @Override
     public void onStart(ConnectedNode connectedNode) {
         Log.e(TAG, "Ros onStart");
-        setRawImageListener(new CompressedImagePublisher(connectedNode));
+        setRawImageListener(new CompressedImagePublisher(getContext(), connectedNode));
     }
 
     @Override
