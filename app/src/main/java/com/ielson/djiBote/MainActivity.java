@@ -38,6 +38,7 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.FlightOrientationMode;
 import dji.common.flightcontroller.simulator.InitializationData;
 import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.flightcontroller.virtualstick.FlightCoordinateSystem;
@@ -72,7 +73,7 @@ import org.ros.node.NodeMainExecutor;
 public class MainActivity extends RosActivity implements TextureView.SurfaceTextureListener, View.OnClickListener {
 
     protected TextureView mVideoSurface = null;
-    private Button mLandBtn, mTakeOffBtn;
+    private Button mLandBtn, mTakeOffBtn, mStickBtn;
     private static final String TAG = MainActivity.class.getName();
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
     private static BaseProduct product;
@@ -89,6 +90,16 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private float mYaw;
     private float mThrottle;
     public final static boolean useSimulator = true;
+    public static final Object TAKEOFFSTART = 1;
+    public static final Object TAKEOFFCOMPLETE = 2;
+    public static final Object TAKEOFFATTEMPTIG = 3;
+    public static final Object VIRTUALSTICKSTART = 4;
+    public static final Object VIRTUALSTICKATTEMPTING = 5;
+    public static final Object VIRTUALSTICKCOMPLETE = 6;
+
+
+    public enum State  {TAKEOFFSTART, TAKEOFFATTEMPTIG, TAKEOFFCOMPLETE, VIRTUALSTICKSTART, VIRTUALSTICKATTEMPTING, VIRTUALSTICKCOMPLETE;}
+    public static State state = State.TAKEOFFSTART;
 
     protected DJICodecManager mCodecManager = null;
 
@@ -111,6 +122,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         cmdVelListener = new CmdVelListener(MainActivity.this);
+        Log.e("CMDVEL", "cmdVel Created");
         initUI();
         // The callback for receiving the raw H264 video data for camera live view
         /*mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
@@ -145,6 +157,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             nodeMainExecutor.execute(talker, nodeConfiguration);
             nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
             nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
+            Log.e("CMDVEL", " executed");
 
         }
         catch (IOException e) {
@@ -172,7 +185,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
 
     private void initFlightController() {
-        talker = new Talker("position");
+        talker = new Talker("position", MainActivity.this);
         if (product != null && product.isConnected()) {
             if (product instanceof Aircraft) {
                 mFlightController = ((Aircraft) product).getFlightController();
@@ -183,9 +196,20 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             mFlightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
             mFlightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
             mFlightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
+            mFlightController.setFlightOrientationMode(FlightOrientationMode.AIRCRAFT_HEADING, new CommonCallbacks.CompletionCallback() {
+                @Override
+                public void onResult(DJIError djiError) {
+                    if (djiError == null) {
+                        Log.e("STICK orientation", "Flight orientation set to aricraft heading");
+                    }
+                    else {
+                        Log.e("STICK orientation", "error : " + djiError.getDescription());
+                    }
+                }
+            });
 //       rosDjiCameraPreviewView = new RosDjiCameraPreviewView(this.getApplicationContext());
             if (useSimulator) {
-                mFlightController.getSimulator().start(InitializationData.createInstance(new LocationCoordinate2D(23, 113), 10, 10), new CommonCallbacks.CompletionCallback() {
+                mFlightController.getSimulator().start(InitializationData.createInstance(new LocationCoordinate2D(-12.97, -38.51), 10, 10), new CommonCallbacks.CompletionCallback() {
                     @Override
                     public void onResult(DJIError djiError) {
                         if (djiError != null) {
@@ -195,6 +219,12 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                         }
                     }
                 });
+            }
+            if (null == mSendVirtualStickDataTimer) {
+                Log.e("STICK", "mSendVirtualStickDataTask created and scheduled");
+                mSendVirtualStickDataTask = new SendVirtualStickDataTask();
+                mSendVirtualStickDataTimer = new Timer();
+                mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
             }
         }
     }
@@ -242,15 +272,39 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         @Override
         public void run() {
             if (mFlightController != null) {
-                mFlightController.sendVirtualStickFlightControlData(
-                        new FlightControlData(
-                                mPitch, mRoll, mYaw, mThrottle
-                        ), new CommonCallbacks.CompletionCallback() { 
+                Log.e("controller", "virtualStickControle available : " + mFlightController.isVirtualStickControlModeAvailable());
+                Log.e("controller", "state: " + state);
+                switch (state){
+                    case VIRTUALSTICKSTART:
+                        state = State.VIRTUALSTICKATTEMPTING;
+                        mFlightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
                             @Override
                             public void onResult(DJIError djiError) {
+                                if (djiError != null ){
+                                    Log.e("STICK", "error setting virtual stick: " + djiError.getDescription());
+                                    Toast.makeText(MainActivity.this, "error setting virtual stick: " + djiError.getDescription(), Toast.LENGTH_SHORT).show();
+                                }
+                                else {
+                                    Log.e("STICK", "Virtual stick set");
+                                    state = State.VIRTUALSTICKCOMPLETE;
+                                }
                             }
-                        }
-                );
+                        });
+                    case VIRTUALSTICKATTEMPTING:
+                        // just wait for it to finish
+                        break;
+                    case VIRTUALSTICKCOMPLETE:
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                Toast.makeText(MainActivity.this, "It's ok to send cmds to the drone now", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        mSendVirtualStickDataTimer.cancel();
+
+                }
+
+
             }
         }
     }
@@ -309,10 +363,12 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 //        mVideoSurface = (TextureView)findViewById(R.id.video_previewer_surface);
         mTakeOffBtn = (Button) findViewById(R.id.btn_take_off);
         mLandBtn = (Button) findViewById(R.id.btn_land);
-        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
-        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
+        mStickBtn = (Button) findViewById(R.id.btn_stick);
+//        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
+//        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
         mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
         rosDjiCameraPreviewView = (RosDjiCameraPreviewView) findViewById(R.id.ros_dji_camera_preview_view);
+
 /*
         if (null != mVideoSurface) {
             mVideoSurface.setSurfaceTextureListener(this);
@@ -320,7 +376,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
         mTakeOffBtn.setOnClickListener(this);
         mLandBtn.setOnClickListener(this);
-        mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
+        mStickBtn.setOnClickListener(this);
+        /*mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
 
             @Override
             public void onTouch(OnScreenJoystick joystick, float pX, float pY) {
@@ -372,7 +429,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 }
 
             }
-        });
+        });*/
         /*mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
 
             @Override
@@ -403,6 +460,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                                         Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
                                     } else {
                                         Toast.makeText(MainActivity.this, "Takeoff success", Toast.LENGTH_SHORT).show();
+                                        state = State.TAKEOFFCOMPLETE;
                                     }
                                 }
                             }
@@ -425,6 +483,22 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                             }
                     );
                 }
+                break;
+            case R.id.btn_stick:
+                Toast.makeText(this, "Stick Button", Toast.LENGTH_SHORT).show();
+                mFlightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
+                    @Override
+                    public void onResult(DJIError djiError) {
+                        if(djiError != null){
+                            Log.e("controller", "Error setting virtualStick: " + djiError.getDescription());
+                        }
+                        else {
+                            Log.e("controller", "VirtualStickMode Enabled");
+                            Toast.makeText(MainActivity.this, "VirtualStickMode Enabled", Toast.LENGTH_SHORT).show();
+                            state = State.VIRTUALSTICKCOMPLETE;
+                        }
+                    }
+                });
                 break;
             default:
                 break;

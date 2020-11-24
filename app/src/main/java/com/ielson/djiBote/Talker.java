@@ -1,10 +1,13 @@
 package com.ielson.djiBote;
 
 
+import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
+
+import net.sqlcipher.IContentObserver;
 
 import org.ros.concurrent.CancellableLoop;
 import org.ros.message.Time;
@@ -15,8 +18,11 @@ import org.ros.node.ConnectedNode;
 import org.ros.node.NodeMain;
 import org.ros.node.topic.Publisher;
 
+import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
+import dji.common.flightcontroller.FlightMode;
 import dji.common.flightcontroller.simulator.SimulatorState;
+import dji.common.util.CommonCallbacks;
 import dji.midware.data.model.P3.DataFlycGetPushFlightRecord;
 import geometry_msgs.Point;
 import geometry_msgs.Pose;
@@ -29,6 +35,7 @@ import std_msgs.Header;
 public class Talker extends AbstractNodeMain {
     private String topic_name;
     private ConnectedNode connectedNode;
+    private Context context;
     Publisher<geometry_msgs.Point> posPublisher;
     Publisher<geometry_msgs.Point> rpyPublisher;
     Publisher<geometry_msgs.Point> velsPublisher;
@@ -50,13 +57,15 @@ public class Talker extends AbstractNodeMain {
     public static double yVelocity;
     public static double zVelocity;
 
-    public Talker() {
+    public Talker(Context context) {
         topic_name = "chatter";
+        this.context = context;
     }
 
-    public Talker(String topic)
+    public Talker(String topic, Context context)
     {
         topic_name = topic;
+        this.context = context;
 
     }
 
@@ -81,7 +90,7 @@ public class Talker extends AbstractNodeMain {
         goHomePublisher = connectedNode.newPublisher(resolver.resolve("goHomePublisher"), Int32._TYPE);
 
         Log.d("Talker", "publishers created");
-        if (!MainActivity.useSimulator) {
+        /*if (!MainActivity.useSimulator) {
             MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
                 @Override
                 public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
@@ -89,12 +98,24 @@ public class Talker extends AbstractNodeMain {
                         @Override
                         public void run() {
                             Log.d("Talker", "Updating var status");
+
+                            if (!flightControllerState.isFlying()){
+                                Log.e("STICK", "isn't flying");
+                            }
+                            else {
+                                if (flightControllerState.getFlightMode() == FlightMode.AUTO_TAKEOFF) {
+                                    Log.e("STICK", "Taking off");
+                                } else {
+                                    MainActivity.state = MainActivity.State.VIRTUALSTICKSTART;
+                                }
+                            }
                             yaw = flightControllerState.getAttitude().yaw;
                             pitch = flightControllerState.getAttitude().pitch;
                             roll = flightControllerState.getAttitude().roll;
                             positionX = flightControllerState.getAircraftLocation().getLatitude();
                             positionY = flightControllerState.getAircraftLocation().getLongitude();
                             positionZ = flightControllerState.getAircraftLocation().getAltitude();
+
 
                             headDirection = flightControllerState.getAircraftHeadDirection();
                             flightTime = flightControllerState.getFlightTimeInSeconds();
@@ -156,6 +177,12 @@ public class Talker extends AbstractNodeMain {
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
+                            if (!simulatorState.isFlying()){
+                                Log.e("STICK", "simulator isn't flying");
+                            }
+                            else {
+                                MainActivity.state = MainActivity.State.VIRTUALSTICKSTART;
+                            }
                             Log.d("Talker", "Updating var status");
                             yaw = simulatorState.getYaw();
                             pitch = simulatorState.getPitch();
@@ -184,6 +211,105 @@ public class Talker extends AbstractNodeMain {
                     });
                 }
             });
-        }
+        }*/
+        MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
+            @Override
+            public void onUpdate(@NonNull FlightControllerState flightControllerState) {
+                Log.e("controller", "received controller state callback");
+                Log.e("controller", " altitude: " + flightControllerState.getAircraftLocation().getAltitude());
+                Log.e("controller", "is flying? "+ flightControllerState.isFlying());
+                Log.e("controller", "is still in take off mode? " + flightControllerState.getFlightMode());
+                Log.e("controller", "isVirtualStick Available? " + MainActivity.mFlightController.isVirtualStickControlModeAvailable());
+
+               updateSensorValues(flightControllerState);
+
+
+                if (MainActivity.state == MainActivity.State.TAKEOFFCOMPLETE){
+                    if (!flightControllerState.isFlying()){
+                        Log.e("controller", "drone not flying");
+                    }
+                    else {
+                        if (flightControllerState.getFlightMode() == FlightMode.AUTO_TAKEOFF){
+                            Log.e("controller", "still taking off");
+                        }
+                        else {
+                            Log.e("controller", "took off");
+                            MainActivity.state = MainActivity.State.VIRTUALSTICKSTART;
+                        }
+                    }
+                }
+                }
+            });
+        MainActivity.mFlightController.getSimulator().setStateCallback(new SimulatorState.Callback() {
+            @Override
+            public void onUpdate(@NonNull SimulatorState simulatorState) {
+                Log.e("controller", "received simulator state callback");
+                Log.e("controller", "some values: altitude: " + simulatorState.getPositionZ());
+
+            }
+        });
+    }
+
+    public void updateSensorValues(FlightControllerState flightControllerState){
+        yaw = flightControllerState.getAttitude().yaw;
+        pitch = flightControllerState.getAttitude().pitch;
+        roll = flightControllerState.getAttitude().roll;
+        positionX = flightControllerState.getAircraftLocation().getLatitude();
+        positionY = flightControllerState.getAircraftLocation().getLongitude();
+        positionZ = flightControllerState.getAircraftLocation().getAltitude();
+
+
+        headDirection = flightControllerState.getAircraftHeadDirection();
+        flightTime = flightControllerState.getFlightTimeInSeconds();
+        goHomeHeight = flightControllerState.getGoHomeHeight();
+        xVelocity = flightControllerState.getVelocityX();
+        yVelocity = flightControllerState.getVelocityY();
+        zVelocity = flightControllerState.getVelocityZ();
+
+        new Handler(Looper.getMainLooper()).post(new Runnable() {
+            @Override
+            public void run() {
+                MainActivity.mTextView.setText("xvel : " + String.format("%.2f", xVelocity) + ", yvel : " + String.format("%.2f", yVelocity) + ", zvel : " + String.format("%.2f", zVelocity) + "\n" +
+                        ", PosX : " + String.format("%.2f", positionX) + ", PosY : " + String.format("%.2f", positionY) + ", PosZ : " + String.format("%.2f", positionZ));
+            }
+        });
+
+
+        Point pos = posPublisher.newMessage();
+        pos.setX(positionX);
+        pos.setY(positionY);
+        pos.setZ(positionZ);
+        posPublisher.publish(pos);
+        Log.d("Talker", "pos msg published");
+
+        Point rpy = rpyPublisher.newMessage();
+        rpy.setX(yaw);
+        rpy.setY(pitch);
+        rpy.setZ(roll);
+        rpyPublisher.publish(rpy);
+        Log.d("Talker", "rpy msg published");
+
+        Point vels = velsPublisher.newMessage();
+        vels.setX(xVelocity);
+        vels.setY(yVelocity);
+        vels.setZ(zVelocity);
+        velsPublisher.publish(vels);
+        Log.d("Talker", "vels msg published");
+
+        Int32 headMsg = headingPublisher.newMessage();
+        headMsg.setData(headDirection);
+        headingPublisher.publish(headMsg);
+        Log.d("Talker", "heading msg published");
+
+        Int32 flightTimeMsg = flightTimePublisher.newMessage();
+        flightTimeMsg.setData(flightTime);
+        flightTimePublisher.publish(flightTimeMsg);
+        Log.d("Talker", "flight time msg published");
+
+        Int32 goHomeHeightMsg = goHomePublisher.newMessage();
+        goHomeHeightMsg.setData(goHomeHeight);
+        goHomePublisher.publish(goHomeHeightMsg);
+        Log.d("Talker", "goHome msg published");
+
     }
 }
