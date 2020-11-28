@@ -18,7 +18,7 @@ buildscript {
 */
 
 buildscript {
-    apply from: "https://github.com/rosjava/android_core/raw/kinetic/buildscript.gradle"
+    apply from: "https://raw.githubusercontent.com/rosjava/android_core/95422c224524a69a0c9aa67dd379d09fc5761d2b/buildscript.gradle"
 }
 
 
