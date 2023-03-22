@@ -277,6 +277,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     // por quem que esse initPreviewer e uninit são chamados?
     private void initPreviewer() {
+        // faz a camera aparecer na tela do cel
         Log.d("FLOW main", "onInitPreviewer");
         product = ConnectionActivity.mProduct;
         if (product == null || !product.isConnected()) {
@@ -284,7 +285,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         } else {
             // se existir uma mVideoSurface, ela comeca a escutar por textures chegando
             if (null != mVideoSurface) {
-                mVideoSurface.setSurfaceTextureListener(this); // TODO nao sei se precisa dela pra ver a tela ou pra mandar pro ros
+                mVideoSurface.setSurfaceTextureListener(this); //
                 Log.d("FLOW main", "mVIdeoSurface surfaceTextureListener set"); //nao foi chamada pelo que eu vi
             }
             if (!product.getModel().equals(Model.UNKNOWN_AIRCRAFT)) {
@@ -308,7 +309,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     public void onResume() {
         Log.d("FLOW main", "onResume");
         super.onResume();
-        initPreviewer(); // TODO ver se precisa
+        initPreviewer(); // Precisa pra mostrar a camera
         Log.d("FLOW main", "Previewer Init");
         initFlightController();
         Log.d("FLOW main", "Flight Controller Init");
@@ -389,7 +390,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main", "onSurfaceTextureAvailable");
         if (mCodecManager == null) {
             mCodecManager = new DJICodecManager(this, surface, width, height);
@@ -397,12 +397,10 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main", "onSurfaceTextureSizeChanged");
     }
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main","onSurfaceTextureDestroyed");
         if (mCodecManager != null) {
             mCodecManager.cleanSurface();
@@ -412,7 +410,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main", "onSurfaceTextureUpdated");
     }
 
