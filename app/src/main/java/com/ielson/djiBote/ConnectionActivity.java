@@ -140,7 +140,7 @@ public class ConnectionActivity extends AppCompatActivity {
             }
         }
 
-
+        /*
         public void onProductConnect(BaseProduct product){
             // ISSO AQUI NÃO TÁ SENDO CHAMADO NUNCA
             Log.d("FLOW", "Product Connected");
@@ -155,6 +155,8 @@ public class ConnectionActivity extends AppCompatActivity {
                 }
             });
         }
+
+         */
 
         @Override
         public void onProductChange(BaseProduct oldProduct, BaseProduct newProduct) {

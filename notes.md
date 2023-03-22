@@ -59,3 +59,5 @@ on Notify Status Change
 
 dji api at an older version
 https://web.archive.org/web/20170615025625/http://developer.dji.com/api-reference/android-api/BaseClasses/DJIBaseProduct.html#djibaseproduct_baseproductlistener_inline
+
+comment sem espaco = comentei nesse branch //ALO ou */ALO

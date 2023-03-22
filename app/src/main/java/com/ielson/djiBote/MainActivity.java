@@ -84,7 +84,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     public static TextView mTextView;
 
     private Timer mSendVirtualStickDataTimer;
-    private SendVirtualStickDataTask mSendVirtualStickDataTask;
+    //private SendVirtualStickDataTask mSendVirtualStickDataTask;
     private float mPitch;
     private float mRoll;
     private float mYaw;
@@ -106,9 +106,9 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     // talker is the node that senses and sends the aircraft info, as position and others
     private Talker talker;
     // RosDjiCameraPreviewView now is just setting the rawImageListener
-    private RosDjiCameraPreviewView rosDjiCameraPreviewView;
+    //private RosDjiCameraPreviewView rosDjiCameraPreviewView;
     // cmdVelListener shoudl listen for the messages sent by controller and make the drone fly
-    private CmdVelListener cmdVelListener;
+    //private CmdVelListener cmdVelListener;
 
 
     // Foi chamada depos de apertar no connectDroneButton, o que faz é:
@@ -142,19 +142,19 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         setContentView(R.layout.activity_main);
         // it happens even before ROS has run
         Log.d("FLOW main", "onCreate after rosjava activity");
-        cmdVelListener = new CmdVelListener(MainActivity.this); // porque aqui?
-        Log.d("FLOW main", "CmdVelListener created");
+        //cmdVelListener = new CmdVelListener(MainActivity.this); // porque aqui?
+        //Log.d("FLOW main", "CmdVelListener created");
         Log.d("CMDVEL", "cmdVel Created");
         initUI();
         // The callback for receiving the raw H264 video data for camera live view
-        /*mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
+        /* mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
             @Override
             public void onReceive(byte[] videoBuffer, int size) {
                 if (mCodecManager != null) {
                     mCodecManager.sendDataToDecoder(videoBuffer, size);
                 }
             }
-        };*/
+        }; */
     }
 
     @Override
@@ -178,9 +178,9 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             //Log.d("Node name", nodeConfiguration.getNodeName().toString());
             Log.d("FLOW main", "node configuration done, with this parameters: " + nodeConfiguration);
             nodeMainExecutor.execute(talker, nodeConfiguration); // podem todos os bis terem a mesma config?
-            nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
-            nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
-            Log.d("FLOW main", "3 nodes executed");
+            //nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
+            //nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
+            Log.d("FLOW main", "1 nodes executed");
 
         }
         catch (IOException e) {
@@ -199,13 +199,13 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
 
     // por que preciso dos broadcast receivers aqui? Provavelmente pra receber o notifyStatusChange da connection Activity
-    protected BroadcastReceiver mReceiver = new BroadcastReceiver() {
+    /*protected BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d("FLOW main", "Broadcast Received");
             onProductConnectionChange();
         }
-    };
+    };*/
 
     private void onProductConnectionChange()
     {
@@ -243,7 +243,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 }
             });
 //       rosDjiCameraPreviewView = new RosDjiCameraPreviewView(this.getApplicationContext());
-            if (useSimulator) {
+            /*if (useSimulator) {
                 Log.d("Flow main", "using simulator");
                 mFlightController.getSimulator().start(InitializationData.createInstance(new LocationCoordinate2D(-12.97, -38.51), 10, 10), new CommonCallbacks.CompletionCallback() {
                     @Override
@@ -257,9 +257,9 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                         }
                     }
                 });
-            }
+            }*/
             // cria um timer para mandar comandos para o virtualStickData(botoes de controle na tela) de tempos em tempos
-            if (null == mSendVirtualStickDataTimer) {
+            /*if (null == mSendVirtualStickDataTimer) {
 
                 mSendVirtualStickDataTask = new SendVirtualStickDataTask();
                 mSendVirtualStickDataTimer = new Timer();
@@ -267,7 +267,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 // tirando os envios do VirtualStick por enquanto
                 //mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
                 Log.d("FLOW main", "Created mSendVirtualDataTimer");
-            }
+            }*/
         }
     }
 
@@ -284,8 +284,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         } else {
             // se existir uma mVideoSurface, ela comeca a escutar por textures chegando
             if (null != mVideoSurface) {
-                mVideoSurface.setSurfaceTextureListener(this);
-                Log.d("FLOW main", "mVIdeoSurface surfaceTextureListener set");
+                mVideoSurface.setSurfaceTextureListener(this); // TODO nao sei se precisa dela pra ver a tela ou pra mandar pro ros
+                Log.d("FLOW main", "mVIdeoSurface surfaceTextureListener set"); //nao foi chamada pelo que eu vi
             }
             if (!product.getModel().equals(Model.UNKNOWN_AIRCRAFT)) {
 //                VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(mReceivedVideoDataCallBack);
@@ -294,6 +294,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         }
     }
     private void uninitPreviewer() {
+        // se nao precisar do init nao vai precisar do uninit tambem, tenho que testar
         Camera camera = product.getCamera();
         if (camera != null){
             // Reset the callback
@@ -307,11 +308,11 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     public void onResume() {
         Log.d("FLOW main", "onResume");
         super.onResume();
-        initPreviewer();
+        initPreviewer(); // TODO ver se precisa
         Log.d("FLOW main", "Previewer Init");
         initFlightController();
         Log.d("FLOW main", "Flight Controller Init");
-        onProductChange(); // por que???????
+        onProductChange(); // por que??????? vou tirar daqui a pouco
         DJIVideoStreamDecoder.getInstance().resume();
         Log.d("FLOW main", "VideoStreamDecoder resumed");
         /*if(mVideoSurface == null) {
@@ -320,7 +321,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
 
 
-    class SendVirtualStickDataTask extends TimerTask {
+    /*class SendVirtualStickDataTask extends TimerTask {
         @Override
         public void run() {
             Log.d("FLOW main", "onSendVirtualStickDataTask");
@@ -361,7 +362,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
             }
         }
-    }
+    }*/
 
     @Override
     public void onPause() {
@@ -388,6 +389,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main", "onSurfaceTextureAvailable");
         if (mCodecManager == null) {
             mCodecManager = new DJICodecManager(this, surface, width, height);
@@ -395,10 +397,12 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main", "onSurfaceTextureSizeChanged");
     }
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main","onSurfaceTextureDestroyed");
         if (mCodecManager != null) {
             mCodecManager.cleanSurface();
@@ -408,6 +412,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     }
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+        // TODO ver se precisa pra ver a tela ou pra mandar pro ros
         Log.d("FLOW main", "onSurfaceTextureUpdated");
     }
 
@@ -427,7 +432,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 //        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
 //        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
         mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
-        rosDjiCameraPreviewView = (RosDjiCameraPreviewView) findViewById(R.id.ros_dji_camera_preview_view);
+        //rosDjiCameraPreviewView = (RosDjiCameraPreviewView) findViewById(R.id.ros_dji_camera_preview_view);
         Log.d("FLOW main", "buttons found");
 
 /*
@@ -549,7 +554,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                     );
                 }
                 break;
-            case R.id.btn_stick:
+            /*case R.id.btn_stick:
                 Toast.makeText(this, "Stick Button", Toast.LENGTH_SHORT).show();
                 Log.d("FLOW main", "Setting virtual stick mode");
                 mFlightController.setVirtualStickModeEnabled(true, new CommonCallbacks.CompletionCallback() {
@@ -565,7 +570,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                         }
                     }
                 });
-                break;
+                break;*/
             default:
                 break;
         }
