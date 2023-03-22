@@ -59,10 +59,8 @@ public class ConnectionActivity extends AppCompatActivity {
 
 
     public void connectDrone(View view){
+        // mudar o nome do botao, pois o drone já tá conectado.
         Log.d("FLOW", "Connect Button Pressed");
-        Toast.makeText(getApplicationContext(), "Starting Connection", Toast.LENGTH_SHORT).show();
-        connectionResult = DJISDKManager.getInstance().startConnectionToProduct(); // comeca uma conexao entre o SDK e o drone.  Returns true if the connection is started successfully. f the connection succeeds, onProductConnect
-
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
 
