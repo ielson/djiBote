@@ -108,7 +108,21 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private CmdVelListener cmdVelListener;
 
 
-
+    // Foi chamada depos de apertar no connectDroneButton, o que faz é:
+    // 1-Chama a atividade do rosJava, com o nome DJIBote 
+    // Não tenho certeza qual das duas linhas vem primeiro, mas acho que é a ordem a seguir:
+    // 2-Chama o init 3-Init cria um socket com as configs escolhidas na tela do ros 4-cria um nodeConfiguration com o hostAddress do nó, e o MasterUri()
+    // 6- inicializa um no para o talker (outro arquivo que manda msgs) 7-inicializa outro para rosDjiCameraPreviewView 8 - inicializa mais um para cmdVelListener
+    // 9(talvez2)-seta a tela para a da atividade principal (já era pra ser aqui? porque nao depois que o ros tiver conectado?) 10-cria cmdVelListener 
+    // 11-inicializa os botoes e seta os onClickListeners para ver qual o botao apertado e o que vai fazer
+    // 12-Se tiver alteracao do produto, ele chama o initFlightController 
+    // 13-cria um talker (por que aqui? - isso tem que ser executado antes do passo 6 entao)
+    // 14-faz configuracoes do controlador de voo 15-Testa se é pra usar o simulador e se sim, configura pra ele
+    // 16-Se ainda nao tiver, cria um timer para mandar os controles do virtualStick (controles na tela do drone)
+    // 17-Se tiver mudanca no produto: 17a-Vê se o produto agora é nulo e escreve na tela que desconectou
+    // 17b-Se nao for nulo, entao coemcou algum drone, verifica a mVideoSurface e setSurfaceTextureListener
+    //
+    
     public MainActivity() {
         // The RosActivity constructor configures the notification title and ticker
         // messages.
@@ -143,7 +157,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 //        nodeConfiguration.setMasterUri(getMasterUri());
         try {
             java.net.Socket socket = new java.net.Socket(getMasterUri().getHost(), getMasterUri().getPort());
-            java.net.InetAddress local_network_address = socket.getLocalAddress();
+            java.net.InetAddress local_network_address = socket.getLocalAddress(); // ver o que retorna nessa funcao
             socket.close();
             NodeConfiguration nodeConfiguration =
                     NodeConfiguration.newPublic(local_network_address.getHostAddress(), getMasterUri());
@@ -154,13 +168,15 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             Log.d("configuracao ROS HNAME", EnvironmentVariables.ROS_ROOT);
             //Log.d("Node name", nodeConfiguration.getNodeName().toString());
             Log.e(TAG, "node configuration: " + nodeConfiguration);
-            nodeMainExecutor.execute(talker, nodeConfiguration);
+            nodeMainExecutor.execute(talker, nodeConfiguration); // podem todos os bis terem a mesma config?
             nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
             nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
             Log.e("CMDVEL", " executed");
 
         }
         catch (IOException e) {
+            // ta errado a tag
+            // porque so pego esse erro?
             Log.e("Camera Tutorial", "socket error trying to get networking information from the master uri");
         }
 
@@ -172,6 +188,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         //nodeMainExecutor.execute(rosTextView, nodeConfiguration);
     }
 
+    // por que preciso dos broadcast receivers aqui?
     protected BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -181,6 +198,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     private void onProductConnectionChange()
     {
+        //assim ele vai tentar iniciar o flightController mesmo se tiver sido uma desconexao, nao?
         initFlightController();
     }
 
@@ -190,6 +208,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             if (product instanceof Aircraft) {
                 mFlightController = ((Aircraft) product).getFlightController();
             }
+            // colocar mensagem de erro se nao for, dizer qual o erro e tal 
         }
         if (mFlightController != null) {
             mFlightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
@@ -220,6 +239,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                     }
                 });
             }
+            // cria um timer para mandar comandos para o virtualStickData(botoes de controle na tela) de tempos em tempos
             if (null == mSendVirtualStickDataTimer) {
                 Log.e("STICK", "mSendVirtualStickDataTask created and scheduled");
                 mSendVirtualStickDataTask = new SendVirtualStickDataTask();
@@ -231,11 +251,13 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     protected void onProductChange() {
     }
+    // por quem que esse initPreviewer e uninit são chamados?
     private void initPreviewer() {
         product = ConnectionActivity.mProduct;
         if (product == null || !product.isConnected()) {
             Toast.makeText(this, getString(R.string.disconnected), Toast.LENGTH_SHORT).show();
         } else {
+            // se existir uma mVideoSurface, ela comeca a escutar por textures chegando
             if (null != mVideoSurface) {
                 mVideoSurface.setSurfaceTextureListener(this);
             }
@@ -374,7 +396,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             mVideoSurface.setSurfaceTextureListener(this);
         }*/
 
-        mTakeOffBtn.setOnClickListener(this);
+        mTakeOffBtn.setOnClickListener(this); // nao lembro bem o que setar para this faz.
         mLandBtn.setOnClickListener(this);
         mStickBtn.setOnClickListener(this);
         /*mScreenJoystickLeft.setJoystickListener(new OnScreenJoystickListener(){
