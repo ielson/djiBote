@@ -103,8 +103,11 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     protected DJICodecManager mCodecManager = null;
 
+    // talker is the node that senses and sends the aircraft info, as position and others
     private Talker talker;
+    // RosDjiCameraPreviewView now is just setting the rawImageListener
     private RosDjiCameraPreviewView rosDjiCameraPreviewView;
+    // cmdVelListener shoudl listen for the messages sent by controller and make the drone fly
     private CmdVelListener cmdVelListener;
 
 
