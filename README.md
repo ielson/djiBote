@@ -22,6 +22,7 @@ As it is now, the setup is a little complicated:
 4. Run ``` roscore ``` in a computer.
 
 5. Turn [USB tethering on](https://support.google.com/android/answer/9059108?hl=en), go to a terminal and search for the assigned IP (it'll be the usb0 connection). It's important to say that your firewall settings need to enable connections in some ports (11311 used to connection and I need to see what others) or it won't work. 
+   --- If you want to use in the android emulator (no ROS support until now) the IP used should be: 10.0.2.2:11311
 
 6. At ROS connection activity set the master IP to ``` http://tetheredAssignedIP:11311/ ``` and click connect.
 

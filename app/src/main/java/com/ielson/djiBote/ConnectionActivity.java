@@ -59,7 +59,8 @@ public class ConnectionActivity extends AppCompatActivity {
 
 
     public void connectDrone(View view){
-        // mudar o nome do botao, pois o drone já tá conectado.
+        // TODO mudar o nome do botao, pois o drone já tá conectado.
+        // TODO o botão só pode ficar clicável depois da conexão, não tá assim
         Log.d("FLOW", "Connect Button Pressed");
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
@@ -90,9 +91,10 @@ public class ConnectionActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_connection);
         Log.d("FLOW", "connectionActivity set");
+        connectButton = (Button) findViewById(R.id.connectButton);
         registerProgressBar = (ProgressBar) findViewById(R.id.registerProgressBar);
         registerTextView = (TextView) findViewById(R.id.registerTextView);
-
+        connectButton.setEnabled(false);
 
         mHandler = new Handler(Looper.getMainLooper());
         Log.d("FLOW", "Handler started");
@@ -140,9 +142,10 @@ public class ConnectionActivity extends AppCompatActivity {
 
 
         public void onProductConnect(BaseProduct product){
+            // ISSO AQUI NÃO TÁ SENDO CHAMADO NUNCA
             Log.d("FLOW", "Product Connected");
             modelTextView = (TextView) findViewById(R.id.modelTextView);
-            // ativar o botao de conectar agora
+            connectButton.setEnabled(true);
             handler.post(new Runnable() {
                 @Override
                 public void run() {
@@ -162,10 +165,11 @@ public class ConnectionActivity extends AppCompatActivity {
             if (mProduct != null && mProduct.getModel() != null) {
                 // se algum produto conectado:
                 // deveria verificar modelo do drone
-                // so liberar o botao de conexao se for o spark 
+                // so liberar o botao de conexao se for o spark
                 handler.post(new Runnable() {
                     @Override
                     public void run() {
+                        connectButton.setEnabled(true);
                         Toast.makeText(getApplicationContext(), "ProductChange", Toast.LENGTH_SHORT).show();
                         modelTextView.setText(mProduct.getModel().getDisplayName() + " is connected"); // escreve no textView qual o drone que conectou
 
