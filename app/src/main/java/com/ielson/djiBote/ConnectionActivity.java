@@ -1,6 +1,10 @@
 package com.ielson.djiBote;
 
+import static android.app.PendingIntent.getActivity;
+
 import android.Manifest;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -14,6 +18,9 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.content.pm.PackageManager;
+
+import java.util.List;
 
 import dji.common.error.DJIError;
 import dji.common.error.DJISDKError;
@@ -26,11 +33,13 @@ import dji.sdk.sdkmanager.DJISDKManager;
 // https://web.archive.org/web/20171025211037/https://developer.dji.com/mobile-sdk/documentation/application-development-workflow/workflow-integrate.html
 // Primeira atividade a ser chamada, basicamente o que faz é:
 // 1-verifica se as permissões estão concedidadas (#TODO corrigir app fechado quando a permissao ainda nao foi dada)
-// 2-inicializa UI da tela de conexao 3-inicializa o handler (reler) 4-faz o registro do app na SDK da DJI 4.1 DJISDKManager.getInstance().startConnectionToProduct();
-// 5-espera conexao do produto na onProductChange 6-espera por alteracoes nos componentes ou conexao no mDJIBaseProductListener
-// 7-chama o notifyStatusChange (tenho que ver o que faz) 8-cria o updateRunnable que manda um broadcast de intent de que a conexao foi alterada.
-// 9-nao sei como o connectDrone ta sendo chamado (acho que é o callback do botao) 10 - ele salva em connectionResult se deu certo a conexao, e nao faz nada com ela 
-// 11 - chama a MainActivicity.class
+// 2-inicializa UI da tela de conexao 3-inicializa o handler 4-acontece productChange 5-NotifYStatusChange é chamada 6-faz o registro do app na SDK da DJI
+// 7-tenta conectar com o drone com o startConnectionToProduct(); 8-espera conexao do produto na onProductChange
+// 9-espera por alteracoes nos em conexao ou produtos com o BaseProductListener 10-chama o notifyStatusChange
+// 11-cria o updateRunnable que manda um broadcast de intent de que a conexao foi alterada. 12-ConnectButtonPressed 13-startConnectionToProduct de novo
+// 14 - Outro productChange 15-OutroBaseProductListenerSet 16-Outro notifyStatusChange
+// 17 - chama a MainActivicity.class
+// 18-Se mesmo em outra tela desconectar: Connectivity changed, e várias vezes de: notifyStatusChange,ComponentChange. (deve ser uma pra cada componente)
 
 public class ConnectionActivity extends AppCompatActivity {
 
@@ -46,9 +55,13 @@ public class ConnectionActivity extends AppCompatActivity {
     TextView modelTextView;
     Handler handler = new Handler(Looper.getMainLooper());
 
+
+
+
     public void connectDrone(View view){
+        Log.d("FLOW", "Connect Button Pressed");
         Toast.makeText(getApplicationContext(), "Starting Connection", Toast.LENGTH_SHORT).show();
-        connectionResult = DJISDKManager.getInstance().startConnectionToProduct(); //tenho que ver se faz a conexao, ou se comeca a mandar os dados
+        connectionResult = DJISDKManager.getInstance().startConnectionToProduct(); // comeca uma conexao entre o SDK e o drone.  Returns true if the connection is started successfully. f the connection succeeds, onProductConnect
 
         Intent intent = new Intent(this, MainActivity.class);
         startActivity(intent);
@@ -61,6 +74,8 @@ public class ConnectionActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         // When the compile and target version is higher than 22, please request the following permission at runtime to ensure the SDK works well.
+        Log.d("FLOW", "onCreate");
+        // TODO colocar um try aqui e fazer algo se a permissao nao for concedida
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             ActivityCompat.requestPermissions(this,
                     new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.VIBRATE,
@@ -73,13 +88,16 @@ public class ConnectionActivity extends AppCompatActivity {
                     }
                     , 1);
         }
+        Log.d("FLOW", "Permissions answered");
 
         setContentView(R.layout.activity_connection);
+        Log.d("FLOW", "connectionActivity set");
         registerProgressBar = (ProgressBar) findViewById(R.id.registerProgressBar);
         registerTextView = (TextView) findViewById(R.id.registerTextView);
 
-        //Initialize DJI SDK Manager
+
         mHandler = new Handler(Looper.getMainLooper());
+        Log.d("FLOW", "Handler started");
         DJISDKManager.getInstance().registerApp(this, mDJISDKManagerCallback);
     }
 
@@ -89,9 +107,12 @@ public class ConnectionActivity extends AppCompatActivity {
         public void onRegister(final DJIError error) {
             Log.d(TAG, error == null ? "success" : error.getDescription());
             if(error == DJISDKError.REGISTRATION_SUCCESS) {
-                DJISDKManager.getInstance().startConnectionToProduct(); // ver o que ta fazendo aqui, quem ele chama, pra onde vai depois daqui
-                                                                        // se nao chamar em mais nenhum lugar, ele so reconhece o drone se já tiver 
-                                                                        // conectado na wifi na hora que fizer o teste do registro.
+                DJISDKManager.getInstance().startConnectionToProduct(); // This method should be called after successful registration of the app and
+                                                                        // once there is a data connection between the mobile device and DJI product.
+                                                                        // This data connection is either a USB cable connection, a WiFi connection (that needs to be established outside of the SDK)
+                                                                        // or a Bluetooth connection (that needs to be established with getBluetoothProductConnector).
+                                                                        // If the connection succeeds, onProductConnect will be called if the connection succeeded.
+                                                                        // Returns true if the connection is started successfully.
                 //handler = new Handler(Looper.getMainLooper());
                 // handler is needed so the UI is updated at the right thread
                 handler.post(new Runnable() {
@@ -100,8 +121,8 @@ public class ConnectionActivity extends AppCompatActivity {
                     public void run() {
                         Toast.makeText(getApplicationContext(), "Register Success", Toast.LENGTH_LONG).show();
                         registerProgressBar.setVisibility(View.GONE);
-                        registerTextView.setText("Successful registration"); // era pra habilitar o botao de connect só agora, né nao?
-                                                                            // na verdade é depois de reconhecer o drone, mas aqui precisava mudar algo?
+                        registerTextView.setText("Successful registration");
+                        Log.d("FLOW", "Registered to DJISDK");
                     }
                 });
             } else {
@@ -112,28 +133,44 @@ public class ConnectionActivity extends AppCompatActivity {
                     public void run() {
                         Toast.makeText(getApplicationContext(), "register sdk failed, check if network is available", Toast.LENGTH_LONG).show();
                         registerTextView.setText("Could not register, error found: " + error.toString());
+                        Log.e(TAG, "Could not register, error found: " + error.toString());
                     }
                 });
 
             }
-            Log.e("TAG", error.toString()); // Esse log aqui ta meio sem sentido 
+        }
+
+
+        public void onProductConnect(BaseProduct product){
+            Log.d("FLOW", "Product Connected");
+            modelTextView = (TextView) findViewById(R.id.modelTextView);
+            // ativar o botao de conectar agora
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Toast.makeText(getApplicationContext(), "Connection succeeded: "+ connectionResult, Toast.LENGTH_SHORT).show();
+                    modelTextView.setText(mProduct.getModel().getDisplayName() + " is connected"); // escreve no textView qual o drone que conectou
+
+                }
+            });
         }
 
         @Override
         public void onProductChange(BaseProduct oldProduct, BaseProduct newProduct) {
-            modelTextView = (TextView) findViewById(R.id.modelTextView);
+            Log.d("FLOW", "Product Change");
+
             mProduct = DJISDKManager.getInstance().getProduct();
+            modelTextView = (TextView) findViewById(R.id.modelTextView);
             if (mProduct != null && mProduct.getModel() != null) {
                 // se algum produto conectado:
                 // deveria verificar modelo do drone
                 // so liberar o botao de conexao se for o spark 
                 handler.post(new Runnable() {
-
                     @Override
                     public void run() {
                         Toast.makeText(getApplicationContext(), "ProductChange", Toast.LENGTH_SHORT).show();
                         modelTextView.setText(mProduct.getModel().getDisplayName() + " is connected"); // escreve no textView qual o drone que conectou
-                        Toast.makeText(getApplicationContext(), "Connection succeeded: "+ connectionResult, Toast.LENGTH_SHORT).show(); // nao faz muito sentido os dois toasts
+
                     }
                 });
             } else {
@@ -150,7 +187,10 @@ public class ConnectionActivity extends AppCompatActivity {
             mProduct = newProduct;
             // porque nao colocar esse listener dentro do if do produto conectado?
             if(mProduct != null) {
-                mProduct.setBaseProductListener(mDJIBaseProductListener); // espera por mudancas no componente ou conectividade. Componente sao as placas do drone?
+                mProduct.setBaseProductListener(mDJIBaseProductListener); // Receives notifications of component and product connectivity changes.
+                                                                        // Interface Methods: onConnectivityChange; onComponentChange
+                                                                        // A component can be a camera, gimbal, remote controller, etc. A DJI product consists of several components. All components of a product are subclasses of BaseComponent and can be accessed directly from the product objects (Aircraft or HandHeld).
+                Log.d("FLOW", "BaseProductListener set");
             }
 
             notifyStatusChange();
@@ -161,8 +201,9 @@ public class ConnectionActivity extends AppCompatActivity {
 
         @Override
         public void onComponentChange(BaseProduct.ComponentKey key, BaseComponent oldComponent, BaseComponent newComponent) {
+            Log.d("FLOW", "Component Change");
             if(newComponent != null) {
-                newComponent.setComponentListener(mDJIComponentListener); // tenho que ver o que o component listener faz
+                newComponent.setComponentListener(mDJIComponentListener); // entrou uma novo drone, camera, gimbal ou algo do tipo vamos esperar por alteracoes dele
                 Toast.makeText(getApplicationContext(), "Component Changed", Toast.LENGTH_LONG).show();
             }
             notifyStatusChange();
@@ -170,15 +211,14 @@ public class ConnectionActivity extends AppCompatActivity {
 
         @Override
         public void onConnectivityChange(boolean isConnected) {
-
-            Toast.makeText(getApplicationContext(), "Connectivity Changed", Toast.LENGTH_SHORT).show(); // seria o certo tratar alguma coisa aqui sobre uma alteracao na conectividade?
+            Log.d("FLOW", "Connectivity Changed");
+            Toast.makeText(getApplicationContext(), "Connectivity Changed", Toast.LENGTH_SHORT).show(); // alteracao de conectividade de algum produto ou componente (camera, gimbal, controle remoto)
             notifyStatusChange();
         }
 
     };
 
     private BaseComponent.ComponentListener mDJIComponentListener = new BaseComponent.ComponentListener() {
-
         @Override
         public void onConnectivityChange(boolean isConnected) {
             notifyStatusChange();
@@ -186,17 +226,20 @@ public class ConnectionActivity extends AppCompatActivity {
 
     };
 
-    private void notifyStatusChange() { // tenho que entender o que ela faz direito. 
-        mHandler.removeCallbacks(updateRunnable);
-        mHandler.postDelayed(updateRunnable, 500);
+    private void notifyStatusChange() { // tenho que entender o que ela faz direito.
+        Log.d("FLOW", "on Notify Status Change");
+        mHandler.removeCallbacks(updateRunnable); // Remove any pending posts of Runnable r that are in the message queue.
+        mHandler.postDelayed(updateRunnable, 500); // Causes the Runnable r to be added to the message queue, to be run after the specified amount of time elapses.
+
     }
 
     private Runnable updateRunnable = new Runnable() {
 
         @Override
         public void run() {
-            Intent intent = new Intent(FLAG_CONNECTION_CHANGE);
+            Intent intent = new Intent(FLAG_CONNECTION_CHANGE); // This Intent is then broadcast to all receivers that have registered to receive broadcasts with this action.
             sendBroadcast(intent);
+
         }
     };
 
