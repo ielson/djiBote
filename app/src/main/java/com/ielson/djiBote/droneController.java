@@ -95,7 +95,7 @@ public class droneController {
         new Handler(Looper.getMainLooper()).post(new Runnable() {
             @Override
             public void run() {
-                MainActivity.mTextView.setText("xvel : " + String.format("%.2f", xVelocity) + ", yvel : " + String.format("%.2f", yVelocity) + ", zvel : " + String.format("%.2f", zVelocity) + "\n" +
+                MainActivity.mTextView.setText("yaw : " + String.format("%.2f", yaw) + ", pitch : " + String.format("%.2f", pitch) + ", roll : " + String.format("%.2f", roll) + "\n" +
                         ", PosX : " + String.format("%.2f", positionX) + ", PosY : " + String.format("%.2f", positionY) + ", PosZ : " + String.format("%.2f", positionZ));
             }
         });
