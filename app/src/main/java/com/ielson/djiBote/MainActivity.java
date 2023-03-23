@@ -76,7 +76,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private Button mLandBtn, mTakeOffBtn, mStickBtn;
     private static final String TAG = MainActivity.class.getName();
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
-    private static BaseProduct product;
+    //private static BaseProduct product;
     //public static FlightController mFlightController;
     private OnScreenJoystick mScreenJoystickRight;
     private OnScreenJoystick mScreenJoystickLeft;
@@ -183,7 +183,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             //nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
             Log.d("FLOW main", "1 nodes executed");
 
-            product = ConnectionActivity.mProduct;
+            //product = ConnectionActivity.mProduct;
             //initPreviewer(); // Precisa pra mostrar a camera
             //Log.d("FLOW main", "Previewer Init");
             droneController.initFlightController();
@@ -238,7 +238,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         Log.d("FLOW main", "onProductChange");
     }
     // por quem que esse initPreviewer e uninit são chamados?
-    private void initPreviewer() {
+    /*private void initPreviewer() {
         // faz a camera aparecer na tela do cel
         Log.d("FLOW main", "onInitPreviewer");
         if (product == null || !product.isConnected()) {
@@ -264,7 +264,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             VideoFeeder.getInstance().getPrimaryVideoFeed().setCallback(null);
 
         }
-    }
+    }*/
 
     @Override
     public void onResume() {
