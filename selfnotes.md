@@ -59,3 +59,15 @@ dji api at an older version
 https://web.archive.org/web/20170615025625/http://developer.dji.com/api-reference/android-api/BaseClasses/DJIBaseProduct.html#djibaseproduct_baseproductlistener_inline
 
 comment sem espaco = comentei nesse branch //ALO ou */ALO
+
+erro na linha 194 (mFlightController.setStateCallback(new FlightControllerState.Callback(){)
+init Flight Controller 
+Flight Controller Init
+
+nao ta pegando o flightController do product
+Attempt to invoke virtual method 'boolean dji.sdk.base.BaseProduct.isConnected()' on a null object reference
+
+private void initPreviewer() {
+// faz a camera aparecer na tela do cel
+Log.d("FLOW main", "onInitPreviewer");
+product = ConnectionActivity.mProduct;

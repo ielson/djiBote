@@ -105,7 +105,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     protected DJICodecManager mCodecManager = null;
 
     // talker is the node that senses and sends the aircraft info, as position and others
-    private Talker talker;
+    //private Talker talker;
     // RosDjiCameraPreviewView now is just setting the rawImageListener
     //private RosDjiCameraPreviewView rosDjiCameraPreviewView;
     // cmdVelListener shoudl listen for the messages sent by controller and make the drone fly
@@ -183,7 +183,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             //nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
             Log.d("FLOW main", "1 nodes executed");
 
-
+            product = ConnectionActivity.mProduct;
             //initPreviewer(); // Precisa pra mostrar a camera
             //Log.d("FLOW main", "Previewer Init");
             initFlightController();
@@ -191,6 +191,14 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             //onProductChange(); // por que??????? vou tirar daqui a pouco
             //DJIVideoStreamDecoder.getInstance().resume();
             //Log.d("FLOW main", "VideoStreamDecoder resumed");
+            mFlightController.setStateCallback(new FlightControllerState.Callback(){
+                @Override
+                public void onUpdate(@NonNull FlightControllerState flightControllerState){
+                    Log.d("FLOW main", "onMFlightController Update");
+                    droneController.updateSensorValues(flightControllerState);
+                }
+
+            });
 
         }
         catch (IOException e) {
@@ -225,8 +233,9 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     private void initFlightController() {
         Log.d("FLOW main", "init Flight Controller");
-        talker = new Talker("position", MainActivity.this);
-        Log.d("Flow main", "Talker created");
+        //talker = new Talker("position", MainActivity.this);
+        //Log.d("Flow main", "Talker created");
+        Log.d("FLOW debug", "product: " +product + " connected? " +product.isConnected());
         if (product != null && product.isConnected()) {
             if (product instanceof Aircraft) {
                 mFlightController = ((Aircraft) product).getFlightController();
@@ -288,7 +297,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private void initPreviewer() {
         // faz a camera aparecer na tela do cel
         Log.d("FLOW main", "onInitPreviewer");
-        product = ConnectionActivity.mProduct;
         if (product == null || !product.isConnected()) {
             Toast.makeText(this, getString(R.string.disconnected), Toast.LENGTH_SHORT).show(); // por que faz  esse teste aqui?
         } else {
