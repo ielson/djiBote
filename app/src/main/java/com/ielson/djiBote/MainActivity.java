@@ -97,7 +97,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     public static final Object VIRTUALSTICKATTEMPTING = 5;
     public static final Object VIRTUALSTICKCOMPLETE = 6;
 
-    public boolean rosRunning = false;
 
 
     public enum State  {TAKEOFFSTART, TAKEOFFATTEMPTIG, TAKEOFFCOMPLETE, VIRTUALSTICKSTART, VIRTUALSTICKATTEMPTING, VIRTUALSTICKCOMPLETE;}
@@ -183,8 +182,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             //nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
             //nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
             Log.d("FLOW main", "1 nodes executed");
-            rosRunning = true;
-            Log.d("FLOW main", "ROS Running: " + rosRunning);
+
 
             //initPreviewer(); // Precisa pra mostrar a camera
             //Log.d("FLOW main", "Previewer Init");
@@ -319,17 +317,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     @Override
     public void onResume() {
         super.onResume();
-        Log.d("FLOW main", "onResume, ros: "+ rosRunning);
-        if (rosRunning) {
-            Log.d("FLOW main", "onResume");
-
-            /*if(mVideoSurface == null) {
-                Log.e(TAG, "mVideoSurface is null");
-            }*/
-        }
-        else {
-            Log.d("FLOW main", "onResume, ROS not running");
-        }
     }
 
 
