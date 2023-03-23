@@ -15,7 +15,7 @@ import dji.common.flightcontroller.virtualstick.FlightControlData;
 import dji.common.util.CommonCallbacks;
 import geometry_msgs.Twist;
 
-import static com.ielson.djiBote.MainActivity.mFlightController;
+import static com.ielson.djiBote.droneController.mFlightController;
 
 public class CmdVelListener extends AbstractNodeMain {
     private Context context;

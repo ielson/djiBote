@@ -77,7 +77,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     private static final String TAG = MainActivity.class.getName();
     protected VideoFeeder.VideoDataCallback mReceivedVideoDataCallBack = null;
     private static BaseProduct product;
-    public static FlightController mFlightController;
+    //public static FlightController mFlightController;
     private OnScreenJoystick mScreenJoystickRight;
     private OnScreenJoystick mScreenJoystickLeft;
 
@@ -186,12 +186,12 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             product = ConnectionActivity.mProduct;
             //initPreviewer(); // Precisa pra mostrar a camera
             //Log.d("FLOW main", "Previewer Init");
-            initFlightController();
+            droneController.initFlightController();
             Log.d("FLOW main", "Flight Controller Init");
             //onProductChange(); // por que??????? vou tirar daqui a pouco
             //DJIVideoStreamDecoder.getInstance().resume();
             //Log.d("FLOW main", "VideoStreamDecoder resumed");
-            mFlightController.setStateCallback(new FlightControllerState.Callback(){
+            droneController.mFlightController.setStateCallback(new FlightControllerState.Callback(){
                 @Override
                 public void onUpdate(@NonNull FlightControllerState flightControllerState){
                     Log.d("FLOW main", "onMFlightController Update");
@@ -228,66 +228,10 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     {
         //assim ele vai tentar iniciar o flightController mesmo se tiver sido uma desconexao, nao?
         Log.d("FLOW main", "onProductConnectionChange");
-        initFlightController();
+        droneController.initFlightController();
     }
 
-    private void initFlightController() {
-        Log.d("FLOW main", "init Flight Controller");
-        //talker = new Talker("position", MainActivity.this);
-        //Log.d("Flow main", "Talker created");
-        Log.d("FLOW debug", "product: " +product + " connected? " +product.isConnected());
-        if (product != null && product.isConnected()) {
-            if (product instanceof Aircraft) {
-                mFlightController = ((Aircraft) product).getFlightController();
-                Log.d("FLOW main", "got product flight controller");
-            }
-            // colocar mensagem de erro se nao for, dizer qual o erro e tal 
-        }
-        if (mFlightController != null) {
-            Log.d("FLOW main", "setting flight controller modes");
-            mFlightController.setRollPitchControlMode(RollPitchControlMode.VELOCITY);
-            mFlightController.setYawControlMode(YawControlMode.ANGULAR_VELOCITY);
-            mFlightController.setVerticalControlMode(VerticalControlMode.VELOCITY);
-            mFlightController.setRollPitchCoordinateSystem(FlightCoordinateSystem.BODY);
-            mFlightController.setFlightOrientationMode(FlightOrientationMode.AIRCRAFT_HEADING, new CommonCallbacks.CompletionCallback() {
-                @Override
-                public void onResult(DJIError djiError) {
-                    if (djiError == null) {
-                        Log.d("FLOW main", "Flight orientation set to aircraft heading");
-                    }
-                    else {
-                        Log.e("STICK orientation", "error : " + djiError.getDescription());
-                    }
-                }
-            });
-//       rosDjiCameraPreviewView = new RosDjiCameraPreviewView(this.getApplicationContext());
-            /*if (useSimulator) {
-                Log.d("Flow main", "using simulator");
-                mFlightController.getSimulator().start(InitializationData.createInstance(new LocationCoordinate2D(-12.97, -38.51), 10, 10), new CommonCallbacks.CompletionCallback() {
-                    @Override
-                    public void onResult(DJIError djiError) {
-                        if (djiError != null) {
-                            Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
-                            Log.e(TAG, "Error starting simulator: " + djiError.getDescription());
-                        } else {
-                            Log.d("FLOW main", "Simulator created");
-                            Toast.makeText(MainActivity.this, "Started Simulator", Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                });
-            }*/
-            // cria um timer para mandar comandos para o virtualStickData(botoes de controle na tela) de tempos em tempos
-            /*if (null == mSendVirtualStickDataTimer) {
 
-                mSendVirtualStickDataTask = new SendVirtualStickDataTask();
-                mSendVirtualStickDataTimer = new Timer();
-
-                // tirando os envios do VirtualStick por enquanto
-                //mSendVirtualStickDataTimer.schedule(mSendVirtualStickDataTask, 100, 200);
-                Log.d("FLOW main", "Created mSendVirtualDataTimer");
-            }*/
-        }
-    }
 
     // pelo que eu entendi vai usar o da outra activity
     protected void onProductChange() {
@@ -522,9 +466,9 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         switch (v.getId()) {
             case R.id.btn_take_off:
                 Toast.makeText(this, "Take off pressed", Toast.LENGTH_SHORT).show();
-                if (mFlightController != null){
+                if (droneController.mFlightController != null){
                     Toast.makeText(this, "Flight controller not null", Toast.LENGTH_SHORT).show();
-                    mFlightController.startTakeoff(
+                    droneController.mFlightController.startTakeoff(
                             new CommonCallbacks.CompletionCallback() {
                                 @Override
                                 public void onResult(DJIError djiError) {
@@ -542,8 +486,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
                 break;
             case R.id.btn_land:
                 Toast.makeText(this, "Land pressed", Toast.LENGTH_SHORT).show();
-                if (mFlightController != null){
-                    mFlightController.startLanding(
+                if (droneController.mFlightController != null){
+                    droneController.mFlightController.startLanding(
                             new CommonCallbacks.CompletionCallback() {
                                 @Override
                                 public void onResult(DJIError djiError) {
