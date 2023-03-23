@@ -97,6 +97,8 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     public static final Object VIRTUALSTICKATTEMPTING = 5;
     public static final Object VIRTUALSTICKCOMPLETE = 6;
 
+    public boolean rosRunning = false;
+
 
     public enum State  {TAKEOFFSTART, TAKEOFFATTEMPTIG, TAKEOFFCOMPLETE, VIRTUALSTICKSTART, VIRTUALSTICKATTEMPTING, VIRTUALSTICKCOMPLETE;}
     public static State state = State.TAKEOFFSTART;
@@ -139,12 +141,11 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("FLOW main", "MainActivity Started");
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+
         // it happens even before ROS has run
-        Log.d("FLOW main", "onCreate after rosjava activity");
         //cmdVelListener = new CmdVelListener(MainActivity.this); // porque aqui?
         //Log.d("FLOW main", "CmdVelListener created");
-        Log.d("CMDVEL", "cmdVel Created");
+        setContentView(R.layout.activity_main);
         initUI();
         // The callback for receiving the raw H264 video data for camera live view
         /* mReceivedVideoDataCallBack = new VideoFeeder.VideoDataCallback() {
@@ -164,6 +165,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 //        NodeConfiguration nodeConfiguration = NodeConfiguration.newPublic(getRosHostname());
 //        nodeConfiguration.setMasterUri(getMasterUri());
         try {
+            // aqui a conexao não já foi feita na tela principal do ROS? porque preciso usar os sockets?
             Log.d("FLOW main", "On Init Method");
             java.net.Socket socket = new java.net.Socket(getMasterUri().getHost(), getMasterUri().getPort());
             java.net.InetAddress local_network_address = socket.getLocalAddress(); // ver o que retorna nessa funcao
@@ -177,10 +179,20 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             Log.d("configuracao ROS HNAME", EnvironmentVariables.ROS_ROOT);
             //Log.d("Node name", nodeConfiguration.getNodeName().toString());
             Log.d("FLOW main", "node configuration done, with this parameters: " + nodeConfiguration);
-            nodeMainExecutor.execute(talker, nodeConfiguration); // podem todos os bis terem a mesma config?
+            //nodeMainExecutor.execute(talker, nodeConfiguration); // podem todos os bis terem a mesma config?
             //nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
             //nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
             Log.d("FLOW main", "1 nodes executed");
+            rosRunning = true;
+            Log.d("FLOW main", "ROS Running: " + rosRunning);
+
+            //initPreviewer(); // Precisa pra mostrar a camera
+            //Log.d("FLOW main", "Previewer Init");
+            initFlightController();
+            Log.d("FLOW main", "Flight Controller Init");
+            //onProductChange(); // por que??????? vou tirar daqui a pouco
+            //DJIVideoStreamDecoder.getInstance().resume();
+            //Log.d("FLOW main", "VideoStreamDecoder resumed");
 
         }
         catch (IOException e) {
@@ -189,7 +201,6 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             Log.d("FLOW main", "Socket error in rosjava");
             Log.e(TAG, "Socket error trying to get networking information from the master uri");
         }
-
 
 
 //        Log.e(TAG, "node configuration: " + nodeConfiguration);
@@ -307,18 +318,18 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
     @Override
     public void onResume() {
-        Log.d("FLOW main", "onResume");
         super.onResume();
-        initPreviewer(); // Precisa pra mostrar a camera
-        Log.d("FLOW main", "Previewer Init");
-        initFlightController();
-        Log.d("FLOW main", "Flight Controller Init");
-        onProductChange(); // por que??????? vou tirar daqui a pouco
-        DJIVideoStreamDecoder.getInstance().resume();
-        Log.d("FLOW main", "VideoStreamDecoder resumed");
-        /*if(mVideoSurface == null) {
-            Log.e(TAG, "mVideoSurface is null");
-        }*/
+        Log.d("FLOW main", "onResume, ros: "+ rosRunning);
+        if (rosRunning) {
+            Log.d("FLOW main", "onResume");
+
+            /*if(mVideoSurface == null) {
+                Log.e(TAG, "mVideoSurface is null");
+            }*/
+        }
+        else {
+            Log.d("FLOW main", "onResume, ROS not running");
+        }
     }
 
 
@@ -428,6 +439,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         mStickBtn = (Button) findViewById(R.id.btn_stick);
 //        mScreenJoystickRight = (OnScreenJoystick)findViewById(R.id.directionJoystickRight);
 //        mScreenJoystickLeft = (OnScreenJoystick)findViewById(R.id.directionJoystickLeft);
+        // mTextView is the button of the flightControllerData_tv name from here
         mTextView = (TextView) findViewById(R.id.flightControllerData_tv);
         //rosDjiCameraPreviewView = (RosDjiCameraPreviewView) findViewById(R.id.ros_dji_camera_preview_view);
         Log.d("FLOW main", "buttons found");
