@@ -191,14 +191,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             //onProductChange(); // por que??????? vou tirar daqui a pouco
             //DJIVideoStreamDecoder.getInstance().resume();
             //Log.d("FLOW main", "VideoStreamDecoder resumed");
-            droneController.mFlightController.setStateCallback(new FlightControllerState.Callback(){
-                @Override
-                public void onUpdate(@NonNull FlightControllerState flightControllerState){
-                    Log.d("FLOW main", "onMFlightController Update");
-                    droneController.updateSensorValues(flightControllerState);
-                }
-
-            });
+            droneController.setFlightControllerStateCallback();
 
         }
         catch (IOException e) {

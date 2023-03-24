@@ -101,6 +101,17 @@ public class droneController {
         });
     }
 
+    public static void setFlightControllerStateCallback(){
+        Log.d("FLOW controller", "onSetFlightControllerStateCallback");
+        mFlightController.setStateCallback(new FlightControllerState.Callback(){
+            @Override
+            public void onUpdate(@NonNull FlightControllerState flightControllerState){
+                Log.d("FLOW main", "onMFlightController Update");
+                updateSensorValues(flightControllerState);
+            }
+        });
+    }
+
     public static void initFlightController() {
         product = ConnectionActivity.mProduct;
         Log.d("FLOW controller", "init Flight Controller");
