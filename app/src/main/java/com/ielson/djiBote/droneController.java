@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.util.Log;
+import android.widget.Toast;
 
 import dji.common.error.DJIError;
 import dji.common.flightcontroller.FlightControllerState;
@@ -39,6 +40,12 @@ public class droneController {
     public static double xVelocity;
     public static double yVelocity;
     public static double zVelocity;
+
+    private static DJIError errorTakingOff;
+    private static DJIError errorLanding;
+
+    public enum State  {TAKEOFFSTART, TAKEOFFATTEMPTIG, TAKEOFFCOMPLETE, VIRTUALSTICKSTART, VIRTUALSTICKATTEMPTING, VIRTUALSTICKCOMPLETE;}
+    public static State state = State.TAKEOFFSTART;
 
 
 
@@ -110,6 +117,55 @@ public class droneController {
                 updateSensorValues(flightControllerState);
             }
         });
+    }
+
+    public static DJIError takeOff(){
+        Log.d("FLOW controller", "onTakeOff");
+        if (mFlightController != null) {
+            mFlightController.startTakeoff(
+                    new CommonCallbacks.CompletionCallback() {
+                        @Override
+                        public void onResult(DJIError djiError) {
+                            if (djiError != null) {
+                                Log.e("Flight Control", "Error taking off " + djiError);
+
+                            } else {
+                                Log.d("Flight Control", "Takeoff success");
+                                state = State.TAKEOFFCOMPLETE;
+                            }
+                            errorTakingOff = djiError;
+                        }
+                    }
+            );
+            return errorTakingOff;
+        }
+        Log.e("Flight Control", "flight controller null and trying to takeOff");
+        return null;
+    }
+
+    public static DJIError land(){
+        Log.d("FLOW controller", "onLand");
+        if (mFlightController != null) {
+            mFlightController.startLanding(
+                    new CommonCallbacks.CompletionCallback() {
+                        @Override
+                        public void onResult(DJIError djiError) {
+                            if (djiError != null) {
+                                Log.e("Flight Control", "Error landing" + djiError);
+
+                            } else {
+                                Log.d("Flight Control", "Landing success");
+                                // TODO ver os estados.
+                                state = State.TAKEOFFCOMPLETE;
+                            }
+                            errorLanding= djiError;
+                        }
+                    }
+            );
+            return errorLanding;
+        }
+        Log.e("Flight Control", "flight controller null and trying to takeOff");
+        return null;
     }
 
     public static void initFlightController() {

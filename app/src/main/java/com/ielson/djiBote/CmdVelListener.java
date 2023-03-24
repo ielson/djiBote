@@ -39,7 +39,7 @@ public class CmdVelListener extends AbstractNodeMain {
                 Log.e("CMDVEL", "new msg: " + twist.getAngular().getY() + " " + twist.getAngular().getX() +  " " +twist.getAngular().getZ() +  " " +twist.getLinear().getZ());
                 if (mFlightController != null) {
                     Log.e("CMDVEL", "sending virtual stick control data");
-                    if (MainActivity.state == MainActivity.State.VIRTUALSTICKCOMPLETE) {
+                    if (droneController.state == droneController.State.VIRTUALSTICKCOMPLETE) {
                         mFlightController.sendVirtualStickFlightControlData(
                                 new FlightControlData(
                                         (float) twist.getLinear().getY(), (float) twist.getLinear().getX(), (float) twist.getAngular().getZ(), (float) twist.getLinear().getZ()

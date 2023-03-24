@@ -99,8 +99,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
 
 
 
-    public enum State  {TAKEOFFSTART, TAKEOFFATTEMPTIG, TAKEOFFCOMPLETE, VIRTUALSTICKSTART, VIRTUALSTICKATTEMPTING, VIRTUALSTICKCOMPLETE;}
-    public static State state = State.TAKEOFFSTART;
+
 
     protected DJICodecManager mCodecManager = null;
 
@@ -459,40 +458,24 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
         switch (v.getId()) {
             case R.id.btn_take_off:
                 Toast.makeText(this, "Take off pressed", Toast.LENGTH_SHORT).show();
-                if (droneController.mFlightController != null){
-                    Toast.makeText(this, "Flight controller not null", Toast.LENGTH_SHORT).show();
-                    droneController.mFlightController.startTakeoff(
-                            new CommonCallbacks.CompletionCallback() {
-                                @Override
-                                public void onResult(DJIError djiError) {
-                                    if (djiError != null) {
-                                        Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Toast.makeText(MainActivity.this, "Takeoff success", Toast.LENGTH_SHORT).show();
-                                        Log.d("FLOW main", "Takeoff success");
-                                        state = State.TAKEOFFCOMPLETE;
-                                    }
-                                }
-                            }
-                    );
+                DJIError error =  droneController.takeOff();
+                if (error != null) {
+                    Toast.makeText(MainActivity.this, "Error taking off: " + error.getDescription(), Toast.LENGTH_SHORT).show();
                 }
+                else {
+                    Toast.makeText(this, "Take Off successed!", Toast.LENGTH_SHORT).show();
+                }
+
+
                 break;
             case R.id.btn_land:
                 Toast.makeText(this, "Land pressed", Toast.LENGTH_SHORT).show();
-                if (droneController.mFlightController != null){
-                    droneController.mFlightController.startLanding(
-                            new CommonCallbacks.CompletionCallback() {
-                                @Override
-                                public void onResult(DJIError djiError) {
-                                    if (djiError != null) {
-                                        Toast.makeText(MainActivity.this, djiError.getDescription(), Toast.LENGTH_SHORT).show();
-                                    } else {
-                                        Toast.makeText(MainActivity.this, "Landing Complete", Toast.LENGTH_SHORT).show();
-                                        Log.d("FLOW main", "Landing Complete");
-                                    }
-                                }
-                            }
-                    );
+                error = droneController.land();
+                if (error != null) {
+                    Toast.makeText(MainActivity.this, "Error landing " + error.getDescription(), Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    Toast.makeText(this, "Landing successed!", Toast.LENGTH_SHORT).show();
                 }
                 break;
             /*case R.id.btn_stick:
