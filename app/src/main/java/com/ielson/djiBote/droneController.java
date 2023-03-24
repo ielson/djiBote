@@ -50,6 +50,8 @@ public class droneController {
 
 
 
+
+
         /*if (MainActivity.state == MainActivity.State.TAKEOFFCOMPLETE) {
             if (!flightControllerState.isFlying()) {
                 Log.d("controller", "drone not flying");
@@ -72,11 +74,15 @@ public class droneController {
         }
     });*/
 
+    public void saveValues(){
+
+    }
+
 
     // gets all new values at the same time and send them to the screen
     public static void updateSensorValues(FlightControllerState flightControllerState) {
 
-        Log.d("FLOW controller", "onUpdateSensorValues");
+        Log.v("FLOW controller", "onUpdateSensorValues");
         yaw = flightControllerState.getAttitude().yaw;
         pitch = flightControllerState.getAttitude().pitch;
         roll = flightControllerState.getAttitude().roll;
@@ -91,6 +97,8 @@ public class droneController {
         xVelocity = flightControllerState.getVelocityX();
         yVelocity = flightControllerState.getVelocityY();
         zVelocity = flightControllerState.getVelocityZ();
+
+
 
         Log.d("Controller:", "yaw: " + yaw);
         Log.d("Controller:", "pitch: " + pitch);
@@ -113,7 +121,7 @@ public class droneController {
         mFlightController.setStateCallback(new FlightControllerState.Callback(){
             @Override
             public void onUpdate(@NonNull FlightControllerState flightControllerState){
-                Log.d("FLOW main", "onMFlightController Update");
+                Log.v("FLOW main", "onMFlightController Update");
                 updateSensorValues(flightControllerState);
             }
         });

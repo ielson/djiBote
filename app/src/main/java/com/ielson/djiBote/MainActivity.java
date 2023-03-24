@@ -104,7 +104,7 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
     protected DJICodecManager mCodecManager = null;
 
     // talker is the node that senses and sends the aircraft info, as position and others
-    //private Talker talker;
+    private Talker talker;
     // RosDjiCameraPreviewView now is just setting the rawImageListener
     //private RosDjiCameraPreviewView rosDjiCameraPreviewView;
     // cmdVelListener shoudl listen for the messages sent by controller and make the drone fly
@@ -177,7 +177,10 @@ public class MainActivity extends RosActivity implements TextureView.SurfaceText
             Log.d("configuracao ROS HNAME", EnvironmentVariables.ROS_ROOT);
             //Log.d("Node name", nodeConfiguration.getNodeName().toString());
             Log.d("FLOW main", "node configuration done, with this parameters: " + nodeConfiguration);
-            //nodeMainExecutor.execute(talker, nodeConfiguration); // podem todos os bis terem a mesma config?
+            Log.d("FLOW DEBUG", "Talker: " +talker);
+            // TODO acho que o contexto não deveria ser esse
+            talker = new Talker(getApplicationContext());
+            nodeMainExecutor.execute(talker, nodeConfiguration); // podem todos os bis terem a mesma config?
             //nodeMainExecutor.execute(rosDjiCameraPreviewView, nodeConfiguration);
             //nodeMainExecutor.execute(cmdVelListener, nodeConfiguration);
             Log.d("FLOW main", "1 nodes executed");

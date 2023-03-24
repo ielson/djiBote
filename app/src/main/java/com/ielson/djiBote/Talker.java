@@ -44,13 +44,14 @@ public class Talker extends AbstractNodeMain {
     public Talker(Context context) {
         topic_name = "chatter";
         this.context = context;
+        Log.d("FLOW talker", "talker"+topic_name);
     }
 
     public Talker(String topic, Context context)
     {
         topic_name = topic;
         this.context = context;
-
+        Log.d("FLOW talker", "talker"+topic_name);
     }
 
     @Override
@@ -60,10 +61,7 @@ public class Talker extends AbstractNodeMain {
 
     @Override
     public void onStart(final ConnectedNode connectedNode) {
-        /*
-        final Publisher<std_msgs.String> publisher =
-                connectedNode.newPublisher(topic_name, std_msgs.String._TYPE);
-        */
+        Log.d("FLOW talker", "onStat");
         this.connectedNode = connectedNode;
         NameResolver resolver = connectedNode.getResolver().newChild("sensorInfo");
         posPublisher = connectedNode.newPublisher(resolver.resolve("pose/position"), Point._TYPE);
@@ -73,87 +71,43 @@ public class Talker extends AbstractNodeMain {
         flightTimePublisher = connectedNode.newPublisher(resolver.resolve("flightTimeRemaining"), Int32._TYPE);
         goHomePublisher = connectedNode.newPublisher(resolver.resolve("goHomePublisher"), Int32._TYPE);
 
-        Log.d("Talker", "publishers created");
-        /*if (!MainActivity.useSimulator) {
-            MainActivity.mFlightController.setStateCallback(new FlightControllerState.Callback() {
-                @Override
-                public void onUpdate(@NonNull final FlightControllerState flightControllerState) {
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            Log.d("Talker", "Updating var status");
+        Log.d("FLOW talker", "publishers created");
 
-                            if (!flightControllerState.isFlying()){
-                                Log.e("STICK", "isn't flying");
-                            }
-                            else {
-                                if (flightControllerState.getFlightMode() == FlightMode.AUTO_TAKEOFF) {
-                                    Log.e("STICK", "Taking off");
-                                } else {
-                                    MainActivity.state = MainActivity.State.VIRTUALSTICKSTART;
-                                }
-                            }
-                            yaw = flightControllerState.getAttitude().yaw;
-                            pitch = flightControllerState.getAttitude().pitch;
-                            roll = flightControllerState.getAttitude().roll;
-                            positionX = flightControllerState.getAircraftLocation().getLatitude();
-                            positionY = flightControllerState.getAircraftLocation().getLongitude();
-                            positionZ = flightControllerState.getAircraftLocation().getAltitude();
+        connectedNode.executeCancellableLoop(new CancellableLoop() {
+            @Override
+            protected void loop() throws InterruptedException {
+                Log.d("FLOW talker", "inside Cancellable Loop");
+                Point rpy = rpyPublisher.newMessage();
+                rpy.setX(droneController.yaw);
+                rpy.setY(droneController.pitch);
+                rpy.setZ(droneController.roll);
+                rpyPublisher.publish(rpy);
+                Log.d("talker", "rpy msg published Yaw : " + String.format("%.2f", droneController.yaw) + ", Pitch : " + String.format("%.2f", droneController.pitch) + ", Roll: " + String.format("%.2f", droneController.roll));
+
+                Point pos = posPublisher.newMessage();
+                pos.setX(droneController.positionX);
+                pos.setY(droneController.positionY);
+                pos.setZ(droneController.positionZ);
+                posPublisher.publish(pos);
+                Log.d("talker", "pos msg published PosX : " + String.format("%.2f", droneController.positionX) + ", posY : " + String.format("%.2f", droneController.positionY) + ", posZ: " + String.format("%.2f", droneController.positionZ));
 
 
-                            headDirection = flightControllerState.getAircraftHeadDirection();
-                            flightTime = flightControllerState.getFlightTimeInSeconds();
-                            goHomeHeight = flightControllerState.getGoHomeHeight();
-                            xVelocity = flightControllerState.getVelocityX();
-                            yVelocity = flightControllerState.getVelocityY();
-                            zVelocity = flightControllerState.getVelocityZ();
+                Point vels = velsPublisher.newMessage();
+                vels.setX(droneController.xVelocity);
+                vels.setY(droneController.yVelocity);
+                vels.setZ(droneController.zVelocity);
+                velsPublisher.publish(vels);
+                Log.d("talker", "vels msg published velX : " + String.format("%.2f", droneController.xVelocity) + ", velY : " + String.format("%.2f", droneController.yVelocity) + ", velZ: " + String.format("%.2f", droneController.zVelocity));
 
 
-                            MainActivity.mTextView.setText("Yaw : " + String.format("%.2f", yaw) + ", Pitch : " + String.format("%.2f", pitch) + ", Roll : " + String.format("%.2f", roll) + "\n" +
-                                    ", PosX : " + String.format("%.2f", positionX) + ", PosY : " + String.format("%.2f", positionY) + ", PosZ : " + String.format("%.2f", positionZ));
-                            Point pos = posPublisher.newMessage();
-                            pos.setX(positionX);
-                            pos.setY(positionY);
-                            pos.setZ(positionZ);
-                            posPublisher.publish(pos);
-                            Log.d("Talker", "pos msg published");
-
-                            Point rpy = rpyPublisher.newMessage();
-                            rpy.setX(yaw);
-                            rpy.setY(pitch);
-                            rpy.setZ(roll);
-                            rpyPublisher.publish(rpy);
-                            Log.d("Talker", "rpy msg published");
-
-                            Point vels = velsPublisher.newMessage();
-                            vels.setX(xVelocity);
-                            vels.setY(yVelocity);
-                            vels.setZ(zVelocity);
-                            velsPublisher.publish(vels);
-                            Log.d("Talker", "vels msg published");
-
-                            Int32 headMsg = headingPublisher.newMessage();
-                            headMsg.setData(headDirection);
-                            headingPublisher.publish(headMsg);
-                            Log.d("Talker", "heading msg published");
-
-                            Int32 flightTimeMsg = flightTimePublisher.newMessage();
-                            flightTimeMsg.setData(flightTime);
-                            flightTimePublisher.publish(flightTimeMsg);
-                            Log.d("Talker", "flight time msg published");
-
-                            Int32 goHomeHeightMsg = goHomePublisher.newMessage();
-                            goHomeHeightMsg.setData(goHomeHeight);
-                            goHomePublisher.publish(goHomeHeightMsg);
-                            Log.d("Talker", "goHome msg published");
+                Thread.sleep(1000);
+            }
+        });
 
 
-                        }
-                    });
-                }
-            });
 
-        }
+
+        /*
         else {
             MainActivity.mFlightController.getSimulator().setStateCallback(new SimulatorState.Callback() {
                 @Override
@@ -200,48 +154,4 @@ public class Talker extends AbstractNodeMain {
 
 
     }
-
-    /*
-    public void updateSensorValues(FlightControllerState flightControllerState){
-
-
-
-        Point pos = posPublisher.newMessage();
-        pos.setX(positionX);
-        pos.setY(positionY);
-        pos.setZ(positionZ);
-        posPublisher.publish(pos);
-        Log.d("Talker", "pos msg published");
-
-        Point rpy = rpyPublisher.newMessage();
-        rpy.setX(yaw);
-        rpy.setY(pitch);
-        rpy.setZ(roll);
-        rpyPublisher.publish(rpy);
-        Log.d("Talker", "rpy msg published");
-
-        Point vels = velsPublisher.newMessage();
-        vels.setX(xVelocity);
-        vels.setY(yVelocity);
-        vels.setZ(zVelocity);
-        velsPublisher.publish(vels);
-        Log.d("Talker", "vels msg published");
-
-        Int32 headMsg = headingPublisher.newMessage();
-        headMsg.setData(headDirection);
-        headingPublisher.publish(headMsg);
-        Log.d("Talker", "heading msg published");
-
-        Int32 flightTimeMsg = flightTimePublisher.newMessage();
-        flightTimeMsg.setData(flightTime);
-        flightTimePublisher.publish(flightTimeMsg);
-        Log.d("Talker", "flight time msg published");
-
-        Int32 goHomeHeightMsg = goHomePublisher.newMessage();
-        goHomeHeightMsg.setData(goHomeHeight);
-        goHomePublisher.publish(goHomeHeightMsg);
-        Log.d("Talker", "goHome msg published");
-
-    }
-    */
 }
